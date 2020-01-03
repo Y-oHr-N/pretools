@@ -1,5 +1,7 @@
 """Transformers."""
 
+import logging
+
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -153,3 +155,71 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
                 Xt['{}_{}_cos'.format(col, attr)] = cos_theta
 
         return Xt
+
+
+class Profiler(BaseEstimator, TransformerMixin):
+    """Profiler."""
+
+    def __init__(
+        self,
+        label_col: str = 'label',
+        max_columns: Optional[int] = None,
+        precision: int = 3
+    ) -> None:
+        self.label_col = label_col
+        self.max_columns = max_columns
+        self.precision = precision
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'Profiler':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        data = pd.DataFrame(X)
+
+        if y is not None:
+            kwargs = {self.label_col: y}
+            data = X.assign(**kwargs)
+
+        logger = logging.getLogger(__name__)
+        summary = data.describe(include='all')
+
+        with pd.option_context(
+            'display.max_columns',
+            self.max_columns,
+            'display.precision',
+            self.precision
+        ):
+            logger.info(summary)
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        return pd.DataFrame(X)
