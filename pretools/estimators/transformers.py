@@ -1,7 +1,9 @@
 """Transformers."""
 
+import itertools
 import logging
 
+from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -11,6 +13,9 @@ import pandas as pd
 
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
+
+from ..utils import get_categorical_cols
+from ..utils import get_numerical_cols
 
 
 class CalendarFeatures(BaseEstimator, TransformerMixin):
@@ -153,6 +158,108 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
 
                 Xt['{}_{}_sin'.format(col, attr)] = sin_theta
                 Xt['{}_{}_cos'.format(col, attr)] = cos_theta
+
+        return Xt
+
+
+class CombinedFeatures(BaseEstimator, TransformerMixin):
+    """Combined Features."""
+
+    def __init__(
+        self,
+        include_data: bool = False,
+        max_features: Optional[int] = None,
+        operands: Optional[List[str]] = None
+    ) -> None:
+        self.include_data = include_data
+        self.max_features = max_features
+        self.operands = operands
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'CombinedFeatures':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+        Xt = pd.DataFrame()
+        categorical_cols = get_categorical_cols(X, labels=True)
+        numerical_cols = get_numerical_cols(X, labels=True)
+
+        n_features = 0
+
+        if self.max_features is None:
+            max_features = np.inf
+        else:
+            max_features = self.max_features
+
+        if self.operands is None:
+            operands = [
+                'add',
+                'subtract',
+                'multiply',
+                'divide',
+                # 'equal'
+            ]
+        else:
+            operands = self.operands
+
+        for col1, col2 in itertools.combinations(categorical_cols, 2):
+            if n_features >= max_features:
+                break
+
+            func = np.vectorize(lambda x1, x2: '{}+{}'.format(x1, x2))
+
+            feature = func(X[col1], X[col2])
+            feature = pd.Series(feature, index=X.index)
+            Xt['add_{}_{}'.format(col1, col2)] = feature.astype('category')
+
+            n_features += 1
+
+        for col1, col2 in itertools.combinations(numerical_cols, 2):
+            for operand in operands:
+                if n_features >= max_features:
+                    break
+
+                func = getattr(np, operand)
+
+                Xt['{}_{}_{}'.format(operand, col1, col2)] = func(
+                    X[col2], X[col2]
+                )
+
+                n_features += 1
+
+        if self.include_data:
+            Xt = np.concatenate([X, Xt], axis=1)
 
         return Xt
 
