@@ -427,3 +427,54 @@ class Profiler(BaseEstimator, TransformerMixin):
             Transformed data.
         """
         return pd.DataFrame(X)
+
+
+class RowStatistics(BaseEstimator, TransformerMixin):
+    """Row statistics."""
+
+    def __init__(self, dtype: Union[str, Type] = 'float64') -> None:
+        self.dtype = dtype
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'RowStatistics':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+        Xt = pd.DataFrame()
+
+        is_null = X.isnull()
+
+        Xt['number_of_na_values'] = is_null.sum(axis=1)
+
+        return Xt.astype(self.dtype)
