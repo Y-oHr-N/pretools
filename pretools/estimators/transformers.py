@@ -162,6 +162,59 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
         return Xt
 
 
+class ClippedFeatures(BaseEstimator, TransformerMixin):
+    """Clipped features."""
+
+    def __init__(self, high: float = 99.0, low: float = 1.0) -> None:
+        self.high = high
+        self.low = low
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'ClippedFeatures':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        self.data_min_, self.data_max_ = np.nanpercentile(
+            X,
+            [self.low, self.high],
+            axis=0
+        )
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+
+        return X.clip(self.data_min_, self.data_max_, axis=1)
+
+
 class CombinedFeatures(BaseEstimator, TransformerMixin):
     """Combined Features."""
 
