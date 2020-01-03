@@ -317,6 +317,50 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         return Xt
 
 
+class DiffFeatures(BaseEstimator, TransformerMixin):
+    """Diff features."""
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'DiffFeatures':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+        Xt = X.diff()
+
+        return Xt.rename(columns='{}_diff'.format)
+
+
 class Profiler(BaseEstimator, TransformerMixin):
     """Profiler."""
 
