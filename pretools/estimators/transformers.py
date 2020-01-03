@@ -3,6 +3,7 @@
 import itertools
 import logging
 
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Type
@@ -12,7 +13,15 @@ import numpy as np
 import pandas as pd
 
 from sklearn.base import BaseEstimator
+from sklearn.base import clone
 from sklearn.base import TransformerMixin
+
+try:  # scikit-learn<=0.21
+    from sklearn.feature_selection.from_model import _calculate_threshold
+    from sklearn.feature_selection.from_model import _get_feature_importances
+except ImportError:
+    from sklearn.feature_selection._from_model import _calculate_threshold
+    from sklearn.feature_selection._from_model import _get_feature_importances
 
 from ..utils import get_categorical_cols
 from ..utils import get_numerical_cols
@@ -359,6 +368,75 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         Xt = X.diff()
 
         return Xt.rename(columns='{}_diff'.format)
+
+
+class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
+    """Meta-transformer for selecting features based on importance weights."""
+
+    def __init__(
+        self,
+        estimator: BaseEstimator,
+        threshold: Optional[Union[float, str]] = None
+    ) -> None:
+        self.estimator = estimator
+        self.threshold = threshold
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None,
+        **fit_params: Any
+    ) -> 'ModifiedSelectFromModel':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        self.estimator_ = clone(self.estimator)
+
+        self.estimator_.fit(X, y, **fit_params)
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+
+        feature_importances = _get_feature_importances(self.estimator_)
+        threshold = _calculate_threshold(
+            self.estimator_, feature_importances, self.threshold
+        )
+
+        logger = logging.getLogger(__name__)
+
+        cols = feature_importances >= threshold
+        _, n_features = X.shape
+        n_dropped_features = n_features - np.sum(cols)
+
+        logger.info("{} features are dropped.".format(n_dropped_features))
+
+        return X.loc[:, cols]
 
 
 class Profiler(BaseEstimator, TransformerMixin):
