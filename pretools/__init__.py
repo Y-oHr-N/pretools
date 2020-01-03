@@ -1,4 +1,4 @@
-"""Awesome package."""
+"""pretools package."""
 
 from pkg_resources import DistributionNotFound
 from pkg_resources import get_distribution

@@ -1,19 +1,19 @@
-# python-package-template
+# pretools
 
-[![CircleCI](https://img.shields.io/circleci/build/github/Y-oHr-N/python-package-template)](https://circleci.com/gh/Y-oHr-N/python-package-template)
+[![CircleCI](https://img.shields.io/circleci/build/github/Y-oHr-N/pretools)](https://circleci.com/gh/Y-oHr-N/pretools)
 
-A template for Python packages.
+A machine learning library.
 
 ## Examples
 
 ```python
-import awesome_package
+import pretools
 ```
 
 ## Installation
 
 ```
-pip install git+https://github.com/Y-oHr-N/python-package-template.git
+pip install git+https://github.com/Y-oHr-N/pretools.git
 ```
 
 ## Testing
