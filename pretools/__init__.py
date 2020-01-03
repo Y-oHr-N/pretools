@@ -11,6 +11,9 @@ try:
 except DistributionNotFound:
     pass
 
+from . import estimators  # noqa
+from . import utils  # noqa
+
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
 
