@@ -439,6 +439,82 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         return X.loc[:, cols]
 
 
+class NUniqueThreshold(BaseEstimator, TransformerMixin):
+    """Feature selector that removes low and high cardinal features."""
+
+    def __init__(
+        self,
+        max_freq: Optional[Union[float, int]] = 1.0,
+        min_freq: Union[float, int] = 1
+    ) -> None:
+        self.max_freq = max_freq
+        self.min_freq = min_freq
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'NUniqueThreshold':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+
+        self.n_samples_, _ = X.shape
+        self.nunique_ = X.nunique()
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+
+        if self.max_freq is None:
+            max_freq = np.inf
+        elif isinstance(self.max_freq, float):
+            max_freq = int(self.max_freq * self.n_samples_)
+        else:
+            max_freq = self.max_freq
+
+        if isinstance(self.min_freq, float):
+            min_freq = int(self.min_freq * self.n_samples_)
+        else:
+            min_freq = self.min_freq
+
+        logger = logging.getLogger(__name__)
+
+        cols = (self.nunique_ > min_freq) & (self.nunique_ < max_freq)
+        _, n_features = X.shape
+        n_dropped_features = n_features - np.sum(cols)
+
+        logger.info('{} features are dropped.'.format(n_dropped_features))
+
+        return X.loc[:, cols]
+
+
 class Profiler(BaseEstimator, TransformerMixin):
     """Profiler."""
 
