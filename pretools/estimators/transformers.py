@@ -370,6 +370,81 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         return Xt.rename(columns='{}_diff'.format)
 
 
+class DropCollinearFeatures(BaseEstimator, TransformerMixin):
+    """Feature selector that removes collinear features."""
+
+    def __init__(
+        self,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        subsample: Union[int, float] = 0.75,
+        threshold: float = 0.95
+    ) -> None:
+        self.random_state = random_state
+        self.subsample = subsample
+        self.threshold = threshold
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'DropCollinearFeatures':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+
+        X, _, = train_test_split(
+            X,
+            random_state=self.random_state,
+            train_size=self.subsample
+        )
+
+        self.corr_ = X.corr()
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+
+        triu = np.triu(self.corr_, k=1)
+        triu = np.abs(triu)
+        triu = np.nan_to_num(triu)
+
+        logger = logging.getLogger(__name__)
+
+        cols = np.all(triu <= self.threshold, axis=0)
+        _, n_features = X.shape
+        n_dropped_features = n_features - np.sum(cols)
+
+        logger.info('{} features are dropped.'.format(n_dropped_features))
+
+        return X.loc[:, cols]
+
+
 class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
     """Meta-transformer for selecting features based on importance weights."""
 
