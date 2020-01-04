@@ -434,7 +434,7 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         _, n_features = X.shape
         n_dropped_features = n_features - np.sum(cols)
 
-        logger.info("{} features are dropped.".format(n_dropped_features))
+        logger.info('{} features are dropped.'.format(n_dropped_features))
 
         return X.loc[:, cols]
 
