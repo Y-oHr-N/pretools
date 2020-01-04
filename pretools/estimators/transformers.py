@@ -525,6 +525,65 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         return X.loc[:, cols]
 
 
+class NAValuesThreshold(BaseEstimator, TransformerMixin):
+    """Feature selector that removes features with many missing values."""
+
+    def __init__(self, threshold: float = 0.6) -> None:
+        self.threshold = threshold
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'NAValuesThreshold':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+
+        self.n_samples_, _ = X.shape
+        self.count_ = X.count()
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+
+        logger = logging.getLogger(__name__)
+
+        cols = self.count_ >= (1.0 - self.threshold) * self.n_samples_
+        _, n_features = X.shape
+        n_dropped_features = n_features - np.sum(cols)
+
+        logger.info('{} features are dropped.'.format(n_dropped_features))
+
+        return X.loc[:, cols]
+
+
 class NUniqueThreshold(BaseEstimator, TransformerMixin):
     """Feature selector that removes low and high cardinal features."""
 
