@@ -174,7 +174,7 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
 class ClippedFeatures(BaseEstimator, TransformerMixin):
     """Clipped features."""
 
-    def __init__(self, high: float = 99.0, low: float = 1.0) -> None:
+    def __init__(self, high: float = 0.99, low: float = 0.01) -> None:
         self.high = high
         self.low = low
 
@@ -198,11 +198,10 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        self.data_min_, self.data_max_ = np.nanpercentile(
-            X,
-            [self.low, self.high],
-            axis=0
-        )
+        X = pd.DataFrame(X)
+
+        self.data_max_ = X.quantile(q=self.high)
+        self.data_min_ = X.quantile(q=self.low)
 
         return self
 
