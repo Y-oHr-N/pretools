@@ -15,6 +15,7 @@ import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.base import clone
 from sklearn.base import TransformerMixin
+from sklearn.model_selection import train_test_split
 
 try:  # scikit-learn<=0.21
     from sklearn.feature_selection.from_model import _calculate_threshold
@@ -375,9 +376,13 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
     def __init__(
         self,
         estimator: BaseEstimator,
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
+        subsample: Union[int, float] = 0.75,
         threshold: Optional[Union[float, str]] = None
     ) -> None:
         self.estimator = estimator
+        self.random_state = random_state
+        self.subsample = subsample
         self.threshold = threshold
 
     def fit(
@@ -401,6 +406,13 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
+        X, _, y, _ = train_test_split(
+            X,
+            y,
+            random_state=self.random_state,
+            train_size=self.subsample
+        )
+
         self.estimator_ = clone(self.estimator)
 
         self.estimator_.fit(X, y, **fit_params)
