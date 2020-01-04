@@ -1,4 +1,4 @@
-"""Engineers."""
+"""Estimators."""
 
 import itertools
 import logging
