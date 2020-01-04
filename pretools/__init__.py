@@ -12,6 +12,7 @@ except DistributionNotFound:
     pass
 
 from . import estimators  # noqa
+from . import metrics  # noqa
 from . import utils  # noqa
 
 logger = logging.getLogger(__name__)
