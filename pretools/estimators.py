@@ -12,10 +12,12 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
+from scipy.stats import gaussian_kde
 from sklearn.base import BaseEstimator
 from sklearn.base import clone
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
+from sklearn.utils import check_random_state
 
 try:  # scikit-learn<=0.21
     from sklearn.feature_selection.from_model import _calculate_threshold
@@ -825,5 +827,69 @@ class TextStatistics(BaseEstimator, TransformerMixin):
 
         for col in X:
             Xt['{}_len'.format(col)] = X[col].str.len()
+
+        return Xt
+
+
+class NaiveDensityEstimator(BaseEstimator):
+    """Naive density estimator."""
+
+    def __init__(self, bandwidth: Optional[Union[float, str]] = None) -> None:
+        self.bandwidth = bandwidth
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'NaiveDensityEstimator':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+
+        categorical_cols = get_categorical_cols(X, labels=True)
+        numerical_cols = get_numerical_cols(X, labels=True)
+
+        self.kernels_ = {}
+        self.value_counts_ = {}
+
+        for col in categorical_cols:
+            self.value_counts_[col] = X[col].value_counts(normalize=True)
+
+        for col in numerical_cols:
+            self.kernels_[col] = gaussian_kde(X[col], bw_method=self.bandwidth)
+
+        return self
+
+    def sample(
+        self,
+        n_samples: int = 1,
+        random_state: Optional[Union[int, np.random.RandomState]] = None
+    ) -> pd.DataFrame:
+        Xt = pd.DataFrame()
+        random_state = check_random_state(random_state)
+
+        for col, value_counts in self.value_counts_.items():
+            Xt[col] = random_state.choice(
+                value_counts.index,
+                size=n_samples,
+                p=value_counts
+            )
+
+        for col, kernel in self.kernels_.items():
+            resample = kernel.resample(size=n_samples, seed=random_state)
+            Xt[col] = np.ravel(resample)
 
         return Xt
