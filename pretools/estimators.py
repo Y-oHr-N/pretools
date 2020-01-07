@@ -15,6 +15,7 @@ import pandas as pd
 from scipy.stats import gaussian_kde
 from sklearn.base import BaseEstimator
 from sklearn.base import clone
+from sklearn.base import DensityMixin
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
 from sklearn.utils import check_random_state
@@ -831,7 +832,7 @@ class TextStatistics(BaseEstimator, TransformerMixin):
         return Xt
 
 
-class NaiveDensityEstimator(BaseEstimator):
+class NaiveDensityEstimator(BaseEstimator, DensityMixin):
     """Naive density estimator."""
 
     def __init__(self, bandwidth: Optional[Union[float, str]] = None) -> None:
@@ -878,11 +879,26 @@ class NaiveDensityEstimator(BaseEstimator):
         n_samples: int = 1,
         random_state: Optional[Union[int, np.random.RandomState]] = None
     ) -> pd.DataFrame:
-        Xt = pd.DataFrame()
+        """Generate random samples from the model.
+
+        Parameters
+        ----------
+        n_samples
+            Number of samples to generate.
+
+        random_state
+            Seed of the pseudo random number generator.
+
+        Returns
+        -------
+        X
+            Generated data.
+        """
+        X = pd.DataFrame()
         random_state = check_random_state(random_state)
 
         for col, value_counts in self.value_counts_.items():
-            Xt[col] = random_state.choice(
+            X[col] = random_state.choice(
                 value_counts.index,
                 size=n_samples,
                 p=value_counts
@@ -890,6 +906,6 @@ class NaiveDensityEstimator(BaseEstimator):
 
         for col, kernel in self.kernels_.items():
             resample = kernel.resample(size=n_samples, seed=random_state)
-            Xt[col] = np.ravel(resample)
+            X[col] = np.ravel(resample)
 
-        return Xt
+        return X
