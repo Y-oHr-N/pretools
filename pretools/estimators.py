@@ -329,6 +329,9 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 class DiffFeatures(BaseEstimator, TransformerMixin):
     """Diff features."""
 
+    def __init__(self, include_data: bool = False) -> None:
+        self.include_data = include_data
+
     def fit(
         self,
         X: pd.DataFrame,
@@ -366,8 +369,12 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         """
         X = pd.DataFrame(X)
         Xt = X.diff()
+        Xt = Xt.rename(columns='{}_diff'.format)
 
-        return Xt.rename(columns='{}_diff'.format)
+        if self.include_data:
+            Xt = np.concatenate([X, Xt], axis=1)
+
+        return Xt
 
 
 class DropCollinearFeatures(BaseEstimator, TransformerMixin):
