@@ -863,6 +863,7 @@ class NaiveDensityEstimator(BaseEstimator, DensityMixin):
         categorical_cols = get_categorical_cols(X, labels=True)
         numerical_cols = get_numerical_cols(X, labels=True)
 
+        self.dtypes_ = X.dtypes
         self.kernels_ = {}
         self.value_counts_ = {}
 
@@ -908,4 +909,4 @@ class NaiveDensityEstimator(BaseEstimator, DensityMixin):
             resample = kernel.resample(size=n_samples, seed=random_state)
             X[col] = np.ravel(resample)
 
-        return X
+        return X.astype(self.dtypes_)
