@@ -833,7 +833,20 @@ class TextStatistics(BaseEstimator, TransformerMixin):
 
 
 class NaiveDensityEstimator(BaseEstimator, DensityMixin):
-    """Naive density estimator."""
+    """Naive density estimator.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from pretools.estimators import NaiveDensityEstimator
+    >>> est = NaiveDensityEstimator()
+    >>> X = pd.DataFrame([['Cat', 1.0], ['Mouse', 10.5], ['Cat', 2.0]])
+    >>> est.fit(X)
+    NaiveDensityEstimator(...)
+    >>> X_new = est.sample()
+    >>> X_new.shape
+    (1, 2)
+    """
 
     def __init__(self, bandwidth: Optional[Union[float, str]] = None) -> None:
         self.bandwidth = bandwidth
@@ -860,18 +873,18 @@ class NaiveDensityEstimator(BaseEstimator, DensityMixin):
         """
         X = pd.DataFrame(X)
 
-        categorical_cols = get_categorical_cols(X, labels=True)
         numerical_cols = get_numerical_cols(X, labels=True)
+        other_cols = np.setdiff1d(X.columns, numerical_cols)
 
         self.dtypes_ = X.dtypes
         self.kernels_ = {}
         self.value_counts_ = {}
 
-        for col in categorical_cols:
-            self.value_counts_[col] = X[col].value_counts(normalize=True)
-
         for col in numerical_cols:
             self.kernels_[col] = gaussian_kde(X[col], bw_method=self.bandwidth)
+
+        for col in other_cols:
+            self.value_counts_[col] = X[col].value_counts(normalize=True)
 
         return self
 
@@ -898,15 +911,15 @@ class NaiveDensityEstimator(BaseEstimator, DensityMixin):
         X = pd.DataFrame()
         random_state = check_random_state(random_state)
 
+        for col, kernel in self.kernels_.items():
+            resample = kernel.resample(size=n_samples, seed=random_state)
+            X[col] = np.ravel(resample)
+
         for col, value_counts in self.value_counts_.items():
             X[col] = random_state.choice(
                 value_counts.index,
                 size=n_samples,
                 p=value_counts
             )
-
-        for col, kernel in self.kernels_.items():
-            resample = kernel.resample(size=n_samples, seed=random_state)
-            X[col] = np.ravel(resample)
 
         return X.astype(self.dtypes_)
