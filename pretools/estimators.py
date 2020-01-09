@@ -24,7 +24,6 @@ except ImportError:
     from sklearn.feature_selection._from_model import _calculate_threshold
     from sklearn.feature_selection._from_model import _get_feature_importances
 
-from .utils import get_categorical_cols
 from .utils import get_numerical_cols
 
 
@@ -274,8 +273,8 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         """
         X = pd.DataFrame(X)
         Xt = pd.DataFrame()
-        categorical_cols = get_categorical_cols(X, labels=True)
         numerical_cols = get_numerical_cols(X, labels=True)
+        other_cols = np.setdiff1d(X.columns, numerical_cols)
 
         n_features = 0
 
@@ -295,7 +294,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         else:
             operands = self.operands
 
-        for col1, col2 in itertools.combinations(categorical_cols, 2):
+        for col1, col2 in itertools.combinations(other_cols, 2):
             if n_features >= max_features:
                 break
 
