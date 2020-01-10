@@ -298,7 +298,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
             if n_features >= max_features:
                 break
 
-            func = np.vectorize(lambda x1, x2: '{}+{}'.format(x1, x2))
+            func = np.vectorize(lambda *args: '+'.join(args))
 
             feature = func(X[col1], X[col2])
             feature = pd.Series(feature, index=X.index)
