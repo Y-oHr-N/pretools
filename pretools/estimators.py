@@ -129,7 +129,7 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
                 unixtime = 1e-09 * s.astype('int64')
                 unixtime = unixtime.astype(self.dtype)
 
-                Xt[col] = unixtime
+                Xt['{}_unixtime'.format(col)] = unixtime
 
             for attr in self.attributes_[col]:
                 x = getattr(s.dt, attr)
