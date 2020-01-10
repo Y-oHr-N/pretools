@@ -320,7 +320,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
                 n_features += 1
 
         if self.include_data:
-            Xt = np.concatenate([X, Xt], axis=1)
+            Xt = pd.concat([X, Xt], axis=1)
 
         return Xt
 
@@ -371,7 +371,7 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         Xt = Xt.rename(columns='{}_diff'.format)
 
         if self.include_data:
-            Xt = np.concatenate([X, Xt], axis=1)
+            Xt = pd.concat([X, Xt], axis=1)
 
         return Xt
 
