@@ -6,6 +6,7 @@ import logging
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -449,6 +450,80 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         logger.info('{} features are dropped.'.format(n_dropped_features))
 
         return X.loc[:, cols]
+
+
+class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
+    """Modified ColumnTransoformer."""
+
+    def __init__(self, transformers: List[Tuple]) -> None:
+        self.transformers = transformers
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'ModifiedColumnTransformer':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+
+        self.transformers_ = []
+
+        for name, t, cols in self.transformers:
+            if callable(cols):
+                cols = cols(X)
+
+            if isinstance(t, BaseEstimator):
+                t = clone(t)
+
+                t.fit(X.loc[:, cols], y)
+
+            self.transformers_.append((name, t, cols))
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+
+        Xs = []
+
+        for _, t, cols in self.transformers_:
+            Xt = X.loc[:, cols]
+
+            if isinstance(t, BaseEstimator):
+                Xt = t.fit_transform(Xt)
+                Xt = pd.DataFrame(Xt)
+
+            Xs.append(Xt)
+
+        Xt = pd.concat(Xs, axis=1)
+
+        return Xt
 
 
 class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
