@@ -4,6 +4,7 @@ import itertools
 import logging
 
 from typing import Any
+from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -431,10 +432,12 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
+        method: Union[Callable, str] = 'pearson',
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         subsample: Union[int, float] = 0.75,
         threshold: float = 0.95
     ) -> None:
+        self.method = method
         self.random_state = random_state
         self.subsample = subsample
         self.threshold = threshold
@@ -467,7 +470,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
             train_size=self.subsample
         )
 
-        self.corr_ = X.corr()
+        self.corr_ = X.corr(method=self.method)
 
         return self
 
