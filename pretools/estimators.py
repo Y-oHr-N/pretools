@@ -68,10 +68,10 @@ class Astype(BaseEstimator, TransformerMixin):
         numerical_cols = get_numerical_cols(X, labels=True)
         unknown_cols = get_unknown_cols(X, labels=True)
 
-        if numerical_cols:
+        if len(numerical_cols) > 0:
             Xt[numerical_cols] = Xt[numerical_cols].astype('float32')
 
-        if unknown_cols:
+        if len(unknown_cols) > 0:
             Xt[unknown_cols] = Xt[unknown_cols].astype('category')
 
         return Xt
