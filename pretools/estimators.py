@@ -26,6 +26,55 @@ except ImportError:
     from sklearn.feature_selection._from_model import _get_feature_importances
 
 from .utils import get_numerical_cols
+from .utils import get_unknown_cols
+
+
+class Astype(BaseEstimator, TransformerMixin):
+    """Astype."""
+
+    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> 'Astype':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+        Xt = X.copy()
+        numerical_cols = get_numerical_cols(X, labels=True)
+        unknown_cols = get_unknown_cols(X, labels=True)
+
+        if len(numerical_cols) > 0:
+            Xt[numerical_cols] = Xt[numerical_cols].astype('float32')
+
+        if len(unknown_cols) > 0:
+            Xt[unknown_cols] = Xt[unknown_cols].astype('category')
+
+        return Xt
 
 
 class CalendarFeatures(BaseEstimator, TransformerMixin):

@@ -36,3 +36,14 @@ def get_time_cols(X: pd.DataFrame, labels: bool = False) -> pd.Series:
         return X.columns[is_time]
 
     return is_time
+
+
+def get_unknown_cols(X: pd.DataFrame, labels: bool = False) -> pd.Series:
+    """Get unknown columns."""
+    X = pd.DataFrame(X)
+    is_unknown = X.dtypes == object
+
+    if labels:
+        return X.columns[is_unknown]
+
+    return is_unknown
