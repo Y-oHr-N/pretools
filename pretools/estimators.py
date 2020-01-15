@@ -538,7 +538,10 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             if callable(cols):
                 cols = cols(X)
 
-            if isinstance(t, BaseEstimator):
+            if t == 'drop':
+                continue
+
+            elif isinstance(t, BaseEstimator):
                 t = clone(t)
 
                 t.fit(X.loc[:, cols], y)
