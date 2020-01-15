@@ -503,7 +503,11 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         _, n_features = X.shape
         n_dropped_features = n_features - np.sum(cols)
 
-        logger.info('{} features are dropped.'.format(n_dropped_features))
+        logger.info(
+            '{} dropped {} features.'.format(
+                self.__class__.__name__, n_dropped_features
+            )
+        )
 
         return X.loc[:, cols]
 
@@ -679,7 +683,11 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         _, n_features = X.shape
         n_dropped_features = n_features - np.sum(cols)
 
-        logger.info('{} features are dropped.'.format(n_dropped_features))
+        logger.info(
+            '{} dropped {} features.'.format(
+                self.__class__.__name__, n_dropped_features
+            )
+        )
 
         return X.loc[:, cols]
 
@@ -738,7 +746,11 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
         _, n_features = X.shape
         n_dropped_features = n_features - np.sum(cols)
 
-        logger.info('{} features are dropped.'.format(n_dropped_features))
+        logger.info(
+            '{} dropped {} features.'.format(
+                self.__class__.__name__, n_dropped_features
+            )
+        )
 
         return X.loc[:, cols]
 
@@ -814,7 +826,11 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
         _, n_features = X.shape
         n_dropped_features = n_features - np.sum(cols)
 
-        logger.info('{} features are dropped.'.format(n_dropped_features))
+        logger.info(
+            '{} dropped {} features.'.format(
+                self.__class__.__name__, n_dropped_features
+            )
+        )
 
         return X.loc[:, cols]
 
