@@ -419,7 +419,8 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         """
         X = pd.DataFrame(X)
         Xt = X.diff()
-        Xt = Xt.rename(columns='{}_diff'.format)
+
+        Xt.rename(columns='{}_diff'.format, inplace=True)
 
         if self.include_data:
             Xt = pd.concat([X, Xt], axis=1)
