@@ -568,7 +568,7 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             Xt = X.loc[:, cols]
 
             if isinstance(t, BaseEstimator):
-                Xt = t.fit_transform(Xt)
+                Xt = t.transform(Xt)
                 Xt = pd.DataFrame(Xt)
 
             Xs.append(Xt)
