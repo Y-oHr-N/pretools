@@ -435,11 +435,13 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         self,
         method: Union[Callable, str] = 'pearson',
         random_state: Optional[Union[int, np.random.RandomState]] = None,
+        shuffle: bool = True,
         subsample: Union[int, float] = 0.75,
         threshold: float = 0.95
     ) -> None:
         self.method = method
         self.random_state = random_state
+        self.shuffle = shuffle
         self.subsample = subsample
         self.threshold = threshold
 
@@ -468,7 +470,8 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         X, _, = train_test_split(
             X,
             random_state=self.random_state,
-            train_size=self.subsample
+            train_size=self.subsample,
+            shuffle=self.shuffle
         )
 
         self.corr_ = X.corr(method=self.method)
@@ -589,12 +592,14 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         self,
         estimator: BaseEstimator,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
+        shuffle: bool = True,
         subsample: Union[int, float] = 0.75,
         threshold: Optional[Union[float, str]] = None,
         use_pimp: bool = False
     ) -> None:
         self.estimator = estimator
         self.random_state = random_state
+        self.shuffle = shuffle
         self.subsample = subsample
         self.threshold = threshold
         self.use_pimp = use_pimp
@@ -624,7 +629,8 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
             X,
             y,
             random_state=self.random_state,
-            train_size=self.subsample
+            train_size=self.subsample,
+            shuffle=self.shuffle
         )
 
         self.estimator_ = clone(self.estimator)
