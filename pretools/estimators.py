@@ -589,12 +589,14 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         estimator: BaseEstimator,
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         subsample: Union[int, float] = 0.75,
-        threshold: Optional[Union[float, str]] = None
+        threshold: Optional[Union[float, str]] = None,
+        use_pimp: bool = False
     ) -> None:
         self.estimator = estimator
         self.random_state = random_state
         self.subsample = subsample
         self.threshold = threshold
+        self.use_pimp = use_pimp
 
     def fit(
         self,
@@ -617,7 +619,7 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X, _, y, _ = train_test_split(
+        X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,
             random_state=self.random_state,
@@ -626,7 +628,22 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
 
         self.estimator_ = clone(self.estimator)
 
-        self.estimator_.fit(X, y, **fit_params)
+        self.estimator_.fit(X_train, y_train, **fit_params)
+
+        if self.use_pimp:
+            from sklearn.inspection import permutation_importance
+
+            self.feature_importances_ = permutation_importance(
+                self.estimator_,
+                X_test,
+                y_test,
+                random_state=self.random_state
+            ).importances_mean
+
+        else:
+            self.feature_importances_ = _get_feature_importances(
+                self.estimator_
+            )
 
         return self
 
@@ -645,14 +662,13 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         """
         X = pd.DataFrame(X)
 
-        feature_importances = _get_feature_importances(self.estimator_)
         threshold = _calculate_threshold(
-            self.estimator_, feature_importances, self.threshold
+            self.estimator_, self.feature_importances_, self.threshold
         )
 
         logger = logging.getLogger(__name__)
 
-        cols = feature_importances >= threshold
+        cols = self.feature_importances_ >= threshold
         _, n_features = X.shape
         n_dropped_features = n_features - np.sum(cols)
 
