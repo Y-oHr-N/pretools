@@ -641,7 +641,9 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
             ).importances_mean
 
         else:
-            self.feature_importances_ = _get_feature_importances(self.estimator_)
+            self.feature_importances_ = _get_feature_importances(
+                self.estimator_
+            )
 
         return self
 
