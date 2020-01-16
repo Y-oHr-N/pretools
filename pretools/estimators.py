@@ -219,6 +219,16 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
                 Xt['{}_{}_sin'.format(col, attr)] = sin_theta
                 Xt['{}_{}_cos'.format(col, attr)] = cos_theta
 
+        logger = logging.getLogger(__name__)
+
+        _, n_created_features = Xt.shape
+
+        logger.info(
+            '{} created {} features.'.format(
+                self.__class__.__name__, n_created_features
+            )
+        )
+
         return Xt
 
 
@@ -369,6 +379,16 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
                 )
 
                 n_features += 1
+
+        logger = logging.getLogger(__name__)
+
+        _, n_created_features = Xt.shape
+
+        logger.info(
+            '{} created {} features.'.format(
+                self.__class__.__name__, n_created_features
+            )
+        )
 
         if self.include_data:
             Xt = pd.concat([X, Xt], axis=1)
