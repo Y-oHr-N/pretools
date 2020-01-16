@@ -334,8 +334,9 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         """
         X = pd.DataFrame(X)
         Xt = pd.DataFrame()
-        numerical_cols = get_numerical_cols(X, labels=True)
-        other_cols = np.setdiff1d(X.columns, numerical_cols)
+        is_numerical = get_numerical_cols(X)
+        numerical_cols = X.columns[is_numerical]
+        other_cols = X.columns[~is_numerical]
 
         n_features = 0
 
