@@ -18,6 +18,7 @@ from sklearn.base import clone
 from sklearn.base import DensityMixin
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KernelDensity
 from sklearn.utils import check_random_state
 
 try:  # scikit-learn<=0.21
@@ -923,3 +924,137 @@ class NaiveDensityEstimator(BaseEstimator, DensityMixin):
             )
 
         return X.astype(self.dtypes_)
+
+
+class ModifiedKernelDensity(BaseEstimator):
+    """Modified KernelDensity.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from pretools.estimators import ModifiedKernelDensity
+    >>> est = ModifiedKernelDensity()
+    >>> X = pd.DataFrame([['Cat', 1.0], ['Mouse', 10.5], ['Cat', 2.0]])
+    >>> est.fit(X)
+    ModifiedKernelDensity(...)
+    >>> X_new = est.sample()
+    """
+
+    def __init__(self, bandwidth: Optional[Union[float, str]] = None) -> None:
+        self.bandwidth = bandwidth
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'ModifiedKernelDensity':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+        n_samples, n_features = X.shape
+
+        is_numerical = get_numerical_cols(X)
+
+        self.numerical_cols_ = X.columns[is_numerical]
+        self.other_cols_ = X.columns[~is_numerical]
+
+        if len(self.numerical_cols_) == 0:
+            raise NotImplementedError()
+
+        if len(self.other_cols_) == 0:
+            raise NotImplementedError()
+
+        grouped = X.groupby(list(self.other_cols_))
+
+        self.named_estimators_ = {}
+        self.probabilities_ = grouped.size() / n_samples
+
+        for name, group in grouped:
+            if self.bandwidth is None:
+                n, _ = group.shape
+                bandwidth = n ** (-1.0 / (n_features + 4.0))
+            else:
+                bandwidth = self.bandwidth
+
+            e = KernelDensity(bandwidth=bandwidth)
+
+            self.named_estimators_[name] = e.fit(group[self.numerical_cols_])
+
+        return self
+
+    def sample(
+        self,
+        n_samples: int = 1,
+        random_state: Optional[Union[int, np.random.RandomState]] = None
+    ) -> pd.DataFrame:
+        """Generate random samples from the model.
+
+        Parameters
+        ----------
+        n_samples
+            Number of samples to generate.
+
+        random_state
+            Seed of the pseudo random number generator.
+
+        Returns
+        -------
+        X
+            Generated data.
+        """
+        X = np.empty((n_samples, len(self.numerical_cols_)))
+        random_state = check_random_state(random_state)
+
+        index = self.probabilities_.index
+
+        if len(self.other_cols_) > 1:
+            index = index.to_flat_index()
+
+        sample_indices = random_state.choice(
+            index,
+            size=n_samples,
+            p=self.probabilities_
+        )
+        sample_indices = pd.Series(sample_indices)
+
+        unique = np.unique(sample_indices)
+
+        for name in unique:
+            e = self.named_estimators_[name]
+            is_matched = sample_indices == name
+            n_matched_samples = np.sum(is_matched)
+
+            X[is_matched] = e.sample(
+                n_matched_samples,
+                random_state=random_state
+            )
+
+        if len(self.other_cols_) > 1:
+            sample_indices = pd.MultiIndex.from_tuples(
+                sample_indices,
+                names=self.other_cols_
+            )
+        else:
+            sample_indices = pd.Index(
+                sample_indices,
+                name=self.other_cols_[0]
+            )
+
+        X = pd.DataFrame(X, columns=self.numerical_cols_, index=sample_indices)
+
+        X.reset_index(inplace=True)
+
+        return X
