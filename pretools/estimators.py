@@ -555,7 +555,7 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self, **params):
         self.params = params
 
-    def fit(self, X, y):
+    def fit(self, X, y, **fit_params):
         X = pd.DataFrame(X)
         cat_features = get_categorical_cols(X, labels=True)
 
@@ -567,7 +567,7 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
 
         y = self.encoder_.fit_transform(y)
 
-        self.estimator_.fit(X, y)
+        self.estimator_.fit(X, y, **fit_params)
 
         return self
 
@@ -591,7 +591,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
     def __init__(self, **params):
         self.params = params
 
-    def fit(self, X, y):
+    def fit(self, X, y, **fit_params):
         X = pd.DataFrame(X)
         cat_features = get_categorical_cols(X, labels=True)
 
@@ -600,7 +600,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
             **self.params
         )
 
-        self.estimator_.fit(X, y)
+        self.estimator_.fit(X, y, **fit_params)
 
         return self
 
