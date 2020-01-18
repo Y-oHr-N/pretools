@@ -14,7 +14,9 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
+from catboost import CatBoostRegressor
 from sklearn.base import BaseEstimator
+from sklearn.base import RegressorMixin
 from sklearn.base import clone
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
@@ -26,6 +28,7 @@ except ImportError:
     from sklearn.feature_selection._from_model import _calculate_threshold
     from sklearn.feature_selection._from_model import _get_feature_importances
 
+from .utils import get_categorical_cols
 from .utils import get_numerical_cols
 from .utils import get_unknown_cols
 
@@ -531,6 +534,32 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         )
 
         return X.loc[:, cols]
+
+
+class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
+    @property
+    def feature_importances_(self):
+        return self.estimator_.get_feature_importance()
+
+    @property
+    def predict(self):
+        return self.estimator_.predict
+
+    def __init__(self, **params):
+        self.params = params
+
+    def fit(self, X, y):
+        X = pd.DataFrame(X)
+        cat_features = get_categorical_cols(X, labels=True)
+
+        self.estimator_ = CatBoostRegressor(
+            cat_features=cat_features,
+            **self.params
+        )
+
+        self.estimator_.fit(X, y)
+
+        return self
 
 
 class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
