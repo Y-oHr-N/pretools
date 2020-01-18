@@ -14,12 +14,15 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
+from catboost import CatBoostClassifier
 from catboost import CatBoostRegressor
 from sklearn.base import BaseEstimator
+from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
 from sklearn.base import clone
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 try:  # scikit-learn<=0.21
     from sklearn.feature_selection.from_model import _calculate_threshold
@@ -534,6 +537,46 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         )
 
         return X.loc[:, cols]
+
+
+class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
+    @property
+    def classes_(self):
+        return self.encoder_.classes_
+
+    @property
+    def feature_importances_(self):
+        return self.estimator_.get_feature_importance()
+
+    @property
+    def predict_proba(self):
+        return self.estimator_.predict_proba
+
+    def __init__(self, **params):
+        self.params = params
+
+    def fit(self, X, y):
+        X = pd.DataFrame(X)
+        cat_features = get_categorical_cols(X, labels=True)
+
+        self.encoder_ = LabelEncoder()
+        self.estimator_ = CatBoostClassifier(
+            cat_features=cat_features,
+            **self.params
+        )
+
+        y = self.encoder_.fit_transform(y)
+
+        self.estimator_.fit(X, y)
+
+        return self
+
+    def predict(self, X):
+        y_pred = self.estimator_.predict(X)
+        y_pred = np.ravel(y_pred)
+        y_pred = y_pred.astype('int64')
+
+        return self.encoder_.inverse_transform(y_pred)
 
 
 class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
