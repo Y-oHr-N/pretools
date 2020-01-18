@@ -4,6 +4,7 @@ import itertools
 import logging
 
 from typing import Any
+from typing import Dict
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -15,9 +16,12 @@ import numpy as np
 import pandas as pd
 
 from sklearn.base import BaseEstimator
+from sklearn.base import ClassifierMixin
+from sklearn.base import RegressorMixin
 from sklearn.base import clone
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 
 try:  # scikit-learn<=0.21
     from sklearn.feature_selection.from_model import _calculate_threshold
@@ -26,6 +30,7 @@ except ImportError:
     from sklearn.feature_selection._from_model import _calculate_threshold
     from sklearn.feature_selection._from_model import _get_feature_importances
 
+from .utils import get_categorical_cols
 from .utils import get_numerical_cols
 from .utils import get_unknown_cols
 
@@ -531,6 +536,224 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         )
 
         return X.loc[:, cols]
+
+
+class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
+    """Modified CatBoostClassifier."""
+
+    @property
+    def classes_(self) -> np.ndarray:
+        """Class labels."""
+        return self._encoder.classes_
+
+    @property
+    def feature_importances_(self) -> np.ndarray:
+        """Feature importances."""
+        return self._model.get_feature_importance()
+
+    @property
+    def predict_proba(self) -> Callable[[np.ndarray], np.ndarray]:
+        """Predict class probabilities for data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        p
+            Class probabilities of data.
+        """
+        return self._model.predict_proba
+
+    def __init__(self, **params: Any) -> None:
+        from catboost import CatBoostClassifier
+
+        self._params = params
+        self._encoder = LabelEncoder()
+        self._model = CatBoostClassifier(**params)
+
+    def get_params(self, deep: bool = True) -> Dict[str, Any]:
+        """Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns
+        -------
+        params
+            Estimator parameters.
+        """
+        return self._params
+
+    def set_params(self, **params: Any) -> 'ModifiedCatBoostClassifier':
+        """Set the parameters of this estimator.
+
+        Parameters
+        ----------
+        **params
+            Estimator parameters.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        for key, value in params.items():
+            self._params[key] = value
+
+        self._model.set_params(**params)
+
+        return self
+
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        **fit_params: Any
+    ) -> 'ModifiedCatBoostClassifier':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+        y = self._encoder.fit_transform(y)
+        cat_features = get_categorical_cols(X, labels=True)
+        fit_params['cat_features'] = cat_features
+
+        self._model.fit(X, y, **fit_params)
+
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict using the fitted model.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        y_pred
+            Predicted values.
+        """
+        y_pred = self._model.predict(X)
+        y_pred = np.ravel(y_pred)
+        y_pred = y_pred.astype('int64')
+
+        return self._encoder.inverse_transform(y_pred)
+
+
+class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
+    """Modified CatBoostRegressor."""
+
+    @property
+    def feature_importances_(self) -> np.ndarray:
+        """Feature importances."""
+        return self._model.get_feature_importance()
+
+    @property
+    def predict(self) -> Callable[[np.ndarray], np.ndarray]:
+        """Predict using the fitted model.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        y_pred
+            Predicted values.
+        """
+        return self._model.predict
+
+    def __init__(self, **params: Any) -> None:
+        from catboost import CatBoostRegressor
+
+        self._params = params
+        self._model = CatBoostRegressor(**params)
+
+    def get_params(self, deep: bool = True) -> Dict[str, Any]:
+        """Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns
+        -------
+        params
+            Estimator parameters.
+        """
+        return self._params
+
+    def set_params(self, **params: Any) -> 'ModifiedCatBoostRegressor':
+        """Set the parameters of this estimator.
+
+        Parameters
+        ----------
+        **params
+            Estimator parameters.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        for key, value in params.items():
+            self._params[key] = value
+
+        self._model.set_params(**params)
+
+        return self
+
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        **fit_params: Any
+    ) -> 'ModifiedCatBoostRegressor':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+        cat_features = get_categorical_cols(X, labels=True)
+        fit_params['cat_features'] = cat_features
+
+        self._model.fit(X, y, **fit_params)
+
+        return self
 
 
 class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
