@@ -15,8 +15,6 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
-from catboost import CatBoostClassifier
-from catboost import CatBoostRegressor
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
@@ -570,6 +568,8 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         return self._model.predict_proba
 
     def __init__(self, **params: Any) -> None:
+        from catboost import CatBoostClassifier
+
         self._params = params
         self._encoder = LabelEncoder()
         self._model = CatBoostClassifier(**params)
@@ -685,6 +685,8 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         return self._model.predict
 
     def __init__(self, **params: Any) -> None:
+        from catboost import CatBoostRegressor
+
         self._params = params
         self._model = CatBoostRegressor(**params)
 
@@ -704,7 +706,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         """
         return self._params
 
-    def set_params(self, **params: Any) -> 'CatBoostRegressor':
+    def set_params(self, **params: Any) -> 'ModifiedCatBoostRegressor':
         """Set the parameters of this estimator.
 
         Parameters
@@ -729,7 +731,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         X: np.ndarray,
         y: np.ndarray,
         **fit_params: Any
-    ) -> 'CatBoostRegressor':
+    ) -> 'ModifiedCatBoostRegressor':
         """Fit the model according to the given training data.
 
         Parameters
