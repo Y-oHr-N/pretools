@@ -553,7 +553,16 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         return self.estimator_.predict_proba
 
     def __init__(self, **params):
-        self.params = params
+        self._params = params
+
+    def get_params(self, deep=True):
+        return self._params
+
+    def set_params(self, **params):
+        for key, value in params.items():
+            self._params[key] = value
+
+        return self
 
     def fit(self, X, y, **fit_params):
         X = pd.DataFrame(X)
@@ -562,7 +571,7 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         self.encoder_ = LabelEncoder()
         self.estimator_ = CatBoostClassifier(
             cat_features=cat_features,
-            **self.params
+            **self._params
         )
 
         y = self.encoder_.fit_transform(y)
@@ -589,7 +598,16 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         return self.estimator_.predict
 
     def __init__(self, **params):
-        self.params = params
+        self._params = params
+
+    def get_params(self, deep=True):
+        return self._params
+
+    def set_params(self, **params):
+        for key, value in params.items():
+            self._params[key] = value
+
+        return self
 
     def fit(self, X, y, **fit_params):
         X = pd.DataFrame(X)
@@ -597,7 +615,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
         self.estimator_ = CatBoostRegressor(
             cat_features=cat_features,
-            **self.params
+            **self._params
         )
 
         self.estimator_.fit(X, y, **fit_params)
