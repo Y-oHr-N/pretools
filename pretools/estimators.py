@@ -542,18 +542,20 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
 class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
     @property
     def classes_(self):
-        return self.encoder_.classes_
+        return self._encoder.classes_
 
     @property
     def feature_importances_(self):
-        return self.estimator_.get_feature_importance()
+        return self._model.get_feature_importance()
 
     @property
     def predict_proba(self):
-        return self.estimator_.predict_proba
+        return self._model.predict_proba
 
     def __init__(self, **params):
         self._params = params
+        self._encoder = LabelEncoder()
+        self._model = CatBoostClassifier(**params)
 
     def get_params(self, deep=True):
         return self._params
@@ -562,43 +564,40 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         for key, value in params.items():
             self._params[key] = value
 
+        self._model.set_params(**params)
+
         return self
 
     def fit(self, X, y, **fit_params):
         X = pd.DataFrame(X)
+        y = self._encoder.fit_transform(y)
         cat_features = get_categorical_cols(X, labels=True)
+        fit_params['cat_features'] = cat_features
 
-        self.encoder_ = LabelEncoder()
-        self.estimator_ = CatBoostClassifier(
-            cat_features=cat_features,
-            **self._params
-        )
-
-        y = self.encoder_.fit_transform(y)
-
-        self.estimator_.fit(X, y, **fit_params)
+        self._model.fit(X, y, **fit_params)
 
         return self
 
     def predict(self, X):
-        y_pred = self.estimator_.predict(X)
+        y_pred = self._model.predict(X)
         y_pred = np.ravel(y_pred)
         y_pred = y_pred.astype('int64')
 
-        return self.encoder_.inverse_transform(y_pred)
+        return self._encoder.inverse_transform(y_pred)
 
 
 class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
     @property
     def feature_importances_(self):
-        return self.estimator_.get_feature_importance()
+        return self._model.get_feature_importance()
 
     @property
     def predict(self):
-        return self.estimator_.predict
+        return self._model.predict
 
     def __init__(self, **params):
         self._params = params
+        self._model = CatBoostRegressor(**params)
 
     def get_params(self, deep=True):
         return self._params
@@ -607,18 +606,16 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         for key, value in params.items():
             self._params[key] = value
 
+        self._model.set_params(**params)
+
         return self
 
     def fit(self, X, y, **fit_params):
         X = pd.DataFrame(X)
         cat_features = get_categorical_cols(X, labels=True)
+        fit_params['cat_features'] = cat_features
 
-        self.estimator_ = CatBoostRegressor(
-            cat_features=cat_features,
-            **self._params
-        )
-
-        self.estimator_.fit(X, y, **fit_params)
+        self._model.fit(X, y, **fit_params)
 
         return self
 
