@@ -4,6 +4,7 @@ import itertools
 import logging
 
 from typing import Any
+from typing import Dict
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -540,27 +541,68 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
 
 
 class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
+    """Modified CatBoostClassifier."""
+
     @property
-    def classes_(self):
+    def classes_(self) -> np.ndarray:
+        """Class labels."""
         return self._encoder.classes_
 
     @property
-    def feature_importances_(self):
+    def feature_importances_(self) -> np.ndarray:
+        """Feature importances."""
         return self._model.get_feature_importance()
 
     @property
-    def predict_proba(self):
+    def predict_proba(self) -> Callable[[np.ndarray], np.ndarray]:
+        """Predict class probabilities for data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        p
+            Class probabilities of data.
+        """
         return self._model.predict_proba
 
-    def __init__(self, **params):
+    def __init__(self, **params: Any) -> None:
         self._params = params
         self._encoder = LabelEncoder()
         self._model = CatBoostClassifier(**params)
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> Dict[str, Any]:
+        """Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns
+        -------
+        params
+            Estimator parameters.
+        """
         return self._params
 
-    def set_params(self, **params):
+    def set_params(self, **params: Any) -> 'ModifiedCatBoostClassifier':
+        """Set the parameters of this estimator.
+
+        Parameters
+        ----------
+        **params
+            Estimator parameters.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
         for key, value in params.items():
             self._params[key] = value
 
@@ -568,7 +610,27 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def fit(self, X, y, **fit_params):
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        **fit_params: Any
+    ) -> 'ModifiedCatBoostClassifier':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
         X = pd.DataFrame(X)
         y = self._encoder.fit_transform(y)
         cat_features = get_categorical_cols(X, labels=True)
@@ -578,7 +640,19 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict using the fitted model.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        y_pred
+            Predicted values.
+        """
         y_pred = self._model.predict(X)
         y_pred = np.ravel(y_pred)
         y_pred = y_pred.astype('int64')
@@ -587,22 +661,62 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
 
 
 class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
+    """Modified CatBoostRegressor."""
+
     @property
-    def feature_importances_(self):
+    def feature_importances_(self) -> np.ndarray:
+        """Feature importances."""
         return self._model.get_feature_importance()
 
     @property
-    def predict(self):
+    def predict(self) -> Callable[[np.ndarray], np.ndarray]:
+        """Predict using the fitted model.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        y_pred
+            Predicted values.
+        """
         return self._model.predict
 
-    def __init__(self, **params):
+    def __init__(self, **params: Any) -> None:
         self._params = params
         self._model = CatBoostRegressor(**params)
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> Dict[str, Any]:
+        """Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep
+            If True, will return the parameters for this estimator and
+            contained subobjects that are estimators.
+
+        Returns
+        -------
+        params
+            Estimator parameters.
+        """
         return self._params
 
-    def set_params(self, **params):
+    def set_params(self, **params: Any) -> 'CatBoostRegressor':
+        """Set the parameters of this estimator.
+
+        Parameters
+        ----------
+        **params
+            Estimator parameters.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
         for key, value in params.items():
             self._params[key] = value
 
@@ -610,7 +724,27 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
         return self
 
-    def fit(self, X, y, **fit_params):
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        **fit_params: Any
+    ) -> 'CatBoostRegressor':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
         X = pd.DataFrame(X)
         cat_features = get_categorical_cols(X, labels=True)
         fit_params['cat_features'] = cat_features
