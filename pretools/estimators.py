@@ -32,6 +32,7 @@ except ImportError:
 
 from .utils import get_categorical_cols
 from .utils import get_numerical_cols
+from .utils import get_time_cols
 from .utils import get_unknown_cols
 
 
@@ -1196,6 +1197,65 @@ class RowStatistics(BaseEstimator, TransformerMixin):
         Xt['number_of_na_values'] = is_null.sum(axis=1)
 
         return Xt.astype(self.dtype)
+
+
+class SortSamples(BaseEstimator, TransformerMixin):
+    """Transformer that sorts samples."""
+
+    def __init__(self, by: Optional[Union[List[str], str]] = None) -> None:
+        self.by = by
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None
+    ) -> 'SortSamples':
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        self.id_ = id(X)
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        test_id = id(X)
+        X = pd.DataFrame(X)
+
+        if test_id == self.id_:
+            if self.by is None:
+                by = get_time_cols(X, labels=True)
+                by = list(by)
+            else:
+                by = self.by
+
+            if by:
+                X = X.sort_values(by)
+
+        return X
 
 
 class TextStatistics(BaseEstimator, TransformerMixin):
