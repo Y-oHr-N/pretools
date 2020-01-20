@@ -611,7 +611,11 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         params
             Estimator parameters.
         """
-        return self._params
+        params = self._model.get_params(deep=deep)
+
+        params.update(self._params)
+
+        return params
 
     def set_params(self, **params: Any) -> 'ModifiedCatBoostClassifier':
         """Set the parameters of this estimator.
@@ -727,7 +731,11 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         params
             Estimator parameters.
         """
-        return self._params
+        params = self._model.get_params(deep=deep)
+
+        params.update(self._params)
+
+        return params
 
     def set_params(self, **params: Any) -> 'ModifiedCatBoostRegressor':
         """Set the parameters of this estimator.
