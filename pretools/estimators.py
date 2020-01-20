@@ -293,6 +293,19 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
 class CombinedFeatures(BaseEstimator, TransformerMixin):
     """Combined Features."""
 
+    @property
+    def _operands(self) -> List[str]:
+        if self.operands is None:
+            return [
+                'add',
+                'subtract',
+                'multiply',
+                'divide',
+                # 'equal'
+            ]
+
+        return self.operands
+
     def __init__(
         self,
         include_data: bool = False,
@@ -327,6 +340,13 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
         self.n_samples_, self.n_features_ = X.shape
 
+        if self.max_features is None:
+            self.max_features_ = np.inf
+        elif self.max_features == 'auto':
+           self. max_features_ = self.n_samples_ - self.n_features_ - 1
+        else:
+            self.max_features_ = self.max_features
+
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -350,29 +370,11 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
         n_features = 0
 
-        if self.max_features is None:
-            max_features = np.inf
-        elif self.max_features == 'auto':
-            max_features = self.n_samples_ - self.n_features_
-        else:
-            max_features = self.max_features
-
-        if self.operands is None:
-            operands = [
-                'add',
-                'subtract',
-                'multiply',
-                'divide',
-                # 'equal'
-            ]
-        else:
-            operands = self.operands
-
         logger = logging.getLogger(__name__)
 
         for col1, col2 in itertools.combinations(other_cols, 2):
-            for operand in operands:
-                if n_features >= max_features:
+            for operand in self._operands:
+                if n_features >= self.max_features_:
                     break
 
                 if operand == 'multiply':
@@ -384,10 +386,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
                 try:
                     feature = func(X[col1], X[col2])
-
-                except TypeError as e:
-                    # logger.exception(e)
-
+                except TypeError:
                     continue
 
                 if operand == 'multiply':
@@ -399,8 +398,8 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
                 n_features += 1
 
         for col1, col2 in itertools.combinations(numerical_cols, 2):
-            for operand in operands:
-                if n_features >= max_features:
+            for operand in self._operands:
+                if n_features >= self.max_features_:
                     break
 
                 func = getattr(np, operand)
