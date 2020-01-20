@@ -296,7 +296,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
     def __init__(
         self,
         include_data: bool = False,
-        max_features: Optional[int] = None,
+        max_features: Optional[Union[int, str]] = 'auto',
         operands: Optional[List[str]] = None
     ) -> None:
         self.include_data = include_data
@@ -323,6 +323,10 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
+        X = pd.DataFrame(X)
+
+        self.n_samples_, self.n_features_ = X.shape
+
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -348,6 +352,8 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
         if self.max_features is None:
             max_features = np.inf
+        elif self.max_features == 'auto':
+            max_features = self.n_samples_ - self.n_features_
         else:
             max_features = self.max_features
 
@@ -362,17 +368,35 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         else:
             operands = self.operands
 
+        logger = logging.getLogger(__name__)
+
         for col1, col2 in itertools.combinations(other_cols, 2):
-            if n_features >= max_features:
-                break
+            for operand in operands:
+                if n_features >= max_features:
+                    break
 
-            func = np.vectorize(lambda x1, x2: '{}+{}'.format(x1, x2))
+                if operand == 'multiply':
+                    func = np.vectorize(lambda x1, x2: '{}*{}'.format(x1, x2))
+                elif operand == 'equal':
+                    func = np.equal
+                else:
+                    continue
 
-            feature = func(X[col1], X[col2])
-            feature = pd.Series(feature, index=X.index)
-            Xt['add_{}_{}'.format(col1, col2)] = feature.astype('category')
+                try:
+                    feature = func(X[col1], X[col2])
 
-            n_features += 1
+                except TypeError as e:
+                    # logger.exception(e)
+
+                    continue
+
+                if operand == 'multiply':
+                    feature = pd.Series(feature, index=X.index)
+                    feature = feature.astype('category')
+
+                Xt['{}_{}_{}'.format(operand, col1, col2)] = feature
+
+                n_features += 1
 
         for col1, col2 in itertools.combinations(numerical_cols, 2):
             for operand in operands:
@@ -386,8 +410,6 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
                 )
 
                 n_features += 1
-
-        logger = logging.getLogger(__name__)
 
         _, n_created_features = Xt.shape
 
