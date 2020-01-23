@@ -7,7 +7,7 @@ import pandas as pd
 def get_categorical_cols(X: pd.DataFrame, labels: bool = False) -> pd.Series:
     """Get categorical columns."""
     X = pd.DataFrame(X)
-    is_categorical = X.dtypes == 'category'
+    is_categorical = X.dtypes == "category"
 
     if labels:
         return X.columns[is_categorical]

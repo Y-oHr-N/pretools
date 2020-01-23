@@ -39,7 +39,7 @@ from .utils import get_unknown_cols
 class Astype(BaseEstimator, TransformerMixin):
     """Astype."""
 
-    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> 'Astype':
+    def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "Astype":
         """Fit the model according to the given training data.
 
         Parameters
@@ -76,10 +76,10 @@ class Astype(BaseEstimator, TransformerMixin):
         unknown_cols = get_unknown_cols(X, labels=True)
 
         if len(numerical_cols) > 0:
-            Xt[numerical_cols] = Xt[numerical_cols].astype('float32')
+            Xt[numerical_cols] = Xt[numerical_cols].astype("float32")
 
         if len(unknown_cols) > 0:
-            Xt[unknown_cols] = Xt[unknown_cols].astype('category')
+            Xt[unknown_cols] = Xt[unknown_cols].astype("category")
 
         return Xt
 
@@ -89,19 +89,17 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        dtype: Union[str, Type] = 'float64',
+        dtype: Union[str, Type] = "float64",
         encode: bool = False,
-        include_unixtime: bool = False
+        include_unixtime: bool = False,
     ) -> None:
         self.dtype = dtype
         self.encode = encode
         self.include_unixtime = include_unixtime
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'CalendarFeatures':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "CalendarFeatures":
         """Fit the model according to the given training data.
 
         Parameters
@@ -136,28 +134,32 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
 
             if duration >= 2.0 * secondsinyear:
                 # if s.dt.dayofyear.nunique() > 1:
-                #     attrs.append('dayofyear')
+                #     attrs.append("dayofyear")
                 # if s.dt.weekofyear.nunique() > 1:
-                #     attrs.append('weekofyear')
+                #     attrs.append("weekofyear")
                 # if s.dt.quarter.nunique() > 1:
-                #     attrs.append('quarter')
+                #     attrs.append("quarter")
                 if s.dt.month.nunique() > 1:
-                    attrs.append('month')
-            if duration >= 2.0 * secondsinmonth \
-                    and s.dt.day.nunique() > 1:
-                attrs.append('day')
-            if duration >= 2.0 * secondsinweekday \
-                    and s.dt.weekday.nunique() > 1:
-                attrs.append('weekday')
-            if duration >= 2.0 * secondsinday \
-                    and s.dt.hour.nunique() > 1:
-                attrs.append('hour')
-            # if duration >= 2.0 * secondsinhour \
-            #         and s.dt.minute.nunique() > 1:
-            #     attrs.append('minute')
-            # if duration >= 2.0 * secondsinminute \
-            #         and s.dt.second.nunique() > 1:
-            #     attrs.append('second')
+                    attrs.append("month")
+            if duration >= 2.0 * secondsinmonth and s.dt.day.nunique() > 1:
+                attrs.append("day")
+            if (
+                duration >= 2.0 * secondsinweekday
+                and s.dt.weekday.nunique() > 1
+            ):
+                attrs.append("weekday")
+            if duration >= 2.0 * secondsinday and s.dt.hour.nunique() > 1:
+                attrs.append("hour")
+            # if (
+            #     duration >= 2.0 * secondsinhour
+            #     and s.dt.minute.nunique() > 1
+            # ):
+            #     attrs.append("minute")
+            # if (
+            #     duration >= 2.0 * secondsinminute
+            #     and s.dt.second.nunique() > 1
+            # ):
+            #     attrs.append("second")
 
             self.attributes_[col] = attrs
 
@@ -183,37 +185,37 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
             s = X[col]
 
             if self.include_unixtime:
-                unixtime = 1e-09 * s.astype('int64')
+                unixtime = 1e-09 * s.astype("int64")
                 unixtime = unixtime.astype(self.dtype)
 
-                Xt['{}_unixtime'.format(col)] = unixtime
+                Xt["{}_unixtime".format(col)] = unixtime
 
             for attr in self.attributes_[col]:
                 x = getattr(s.dt, attr)
 
                 if not self.encode:
-                    x = x.astype('category')
+                    x = x.astype("category")
 
-                    Xt['{}_{}'.format(col, attr)] = x
+                    Xt["{}_{}".format(col, attr)] = x
 
                     continue
 
-                # if attr == 'dayofyear':
+                # if attr == "dayofyear":
                 #     period = np.where(s.dt.is_leap_year, 366.0, 365.0)
-                # elif attr == 'weekofyear':
+                # elif attr == "weekofyear":
                 #     period = 52.1429
-                # elif attr == 'quarter':
+                # elif attr == "quarter":
                 #     period = 4.0
-                elif attr == 'month':
+                elif attr == "month":
                     period = 12.0
-                elif attr == 'day':
+                elif attr == "day":
                     period = s.dt.daysinmonth
-                elif attr == 'weekday':
+                elif attr == "weekday":
                     period = 7.0
-                elif attr == 'hour':
+                elif attr == "hour":
                     x += s.dt.minute / 60.0 + s.dt.second / 60.0
                     period = 24.0
-                # elif attr in ['minute', 'second']:
+                # elif attr in ["minute", "second"]:
                 #     period = 60.0
 
                 theta = 2.0 * np.pi * x / period
@@ -222,15 +224,15 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
                 cos_theta = np.cos(theta)
                 cos_theta = cos_theta.astype(self.dtype)
 
-                Xt['{}_{}_sin'.format(col, attr)] = sin_theta
-                Xt['{}_{}_cos'.format(col, attr)] = cos_theta
+                Xt["{}_{}_sin".format(col, attr)] = sin_theta
+                Xt["{}_{}_cos".format(col, attr)] = cos_theta
 
         logger = logging.getLogger(__name__)
 
         _, n_created_features = Xt.shape
 
         logger.info(
-            '{} created {} features.'.format(
+            "{} created {} features.".format(
                 self.__class__.__name__, n_created_features
             )
         )
@@ -246,10 +248,8 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
         self.low = low
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'ClippedFeatures':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "ClippedFeatures":
         """Fit the model according to the given training data.
 
         Parameters
@@ -297,11 +297,11 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
     def _operands(self) -> List[str]:
         if self.operands is None:
             return [
-                'add',
-                'subtract',
-                'multiply',
-                'divide',
-                # 'equal'
+                "add",
+                "subtract",
+                "multiply",
+                "divide",
+                # "equal",
             ]
 
         return self.operands
@@ -309,18 +309,16 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
     def __init__(
         self,
         include_data: bool = False,
-        max_features: Optional[Union[int, str]] = 'auto',
-        operands: Optional[List[str]] = None
+        max_features: Optional[Union[int, str]] = "auto",
+        operands: Optional[List[str]] = None,
     ) -> None:
         self.include_data = include_data
         self.max_features = max_features
         self.operands = operands
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'CombinedFeatures':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "CombinedFeatures":
         """Fit the model according to the given training data.
 
         Parameters
@@ -342,8 +340,8 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
         if self.max_features is None:
             self.max_features_ = np.inf
-        elif self.max_features == 'auto':
-           self. max_features_ = self.n_samples_ - self.n_features_ - 1
+        elif self.max_features == "auto":
+            self.max_features_ = self.n_samples_ - self.n_features_ - 1
         else:
             self.max_features_ = self.max_features
 
@@ -377,9 +375,9 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
                 if n_features >= self.max_features_:
                     break
 
-                if operand == 'multiply':
-                    func = np.vectorize(lambda x1, x2: '{}*{}'.format(x1, x2))
-                elif operand == 'equal':
+                if operand == "multiply":
+                    func = np.vectorize(lambda x1, x2: "{}*{}".format(x1, x2))
+                elif operand == "equal":
                     func = np.equal
                 else:
                     continue
@@ -389,11 +387,11 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
                 except TypeError:
                     continue
 
-                if operand == 'multiply':
+                if operand == "multiply":
                     feature = pd.Series(feature, index=X.index)
-                    feature = feature.astype('category')
+                    feature = feature.astype("category")
 
-                Xt['{}_{}_{}'.format(operand, col1, col2)] = feature
+                Xt["{}_{}_{}".format(operand, col1, col2)] = feature
 
                 n_features += 1
 
@@ -404,7 +402,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
                 func = getattr(np, operand)
 
-                Xt['{}_{}_{}'.format(operand, col1, col2)] = func(
+                Xt["{}_{}_{}".format(operand, col1, col2)] = func(
                     X[col2], X[col2]
                 )
 
@@ -413,7 +411,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         _, n_created_features = Xt.shape
 
         logger.info(
-            '{} created {} features.'.format(
+            "{} created {} features.".format(
                 self.__class__.__name__, n_created_features
             )
         )
@@ -431,10 +429,8 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         self.include_data = include_data
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'DiffFeatures':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "DiffFeatures":
         """Fit the model according to the given training data.
 
         Parameters
@@ -468,7 +464,7 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         X = pd.DataFrame(X)
         Xt = X.diff()
 
-        Xt.rename(columns='{}_diff'.format, inplace=True)
+        Xt.rename(columns="{}_diff".format, inplace=True)
 
         if self.include_data:
             Xt = pd.concat([X, Xt], axis=1)
@@ -481,11 +477,11 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        method: Union[Callable, str] = 'pearson',
+        method: Union[Callable, str] = "pearson",
         random_state: Optional[Union[int, np.random.RandomState]] = None,
         shuffle: bool = True,
         subsample: Union[int, float] = 0.75,
-        threshold: float = 0.95
+        threshold: float = 0.95,
     ) -> None:
         self.method = method
         self.random_state = random_state
@@ -494,10 +490,8 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         self.threshold = threshold
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'DropCollinearFeatures':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "DropCollinearFeatures":
         """Fit the model according to the given training data.
 
         Parameters
@@ -519,7 +513,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
             X,
             random_state=self.random_state,
             train_size=self.subsample,
-            shuffle=self.shuffle
+            shuffle=self.shuffle,
         )
 
         self.corr_ = X.corr(method=self.method)
@@ -552,7 +546,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         n_dropped_features = n_features - np.sum(cols)
 
         logger.info(
-            '{} dropped {} features.'.format(
+            "{} dropped {} features.".format(
                 self.__class__.__name__, n_dropped_features
             )
         )
@@ -616,7 +610,7 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
 
         return params
 
-    def set_params(self, **params: Any) -> 'ModifiedCatBoostClassifier':
+    def set_params(self, **params: Any) -> "ModifiedCatBoostClassifier":
         """Set the parameters of this estimator.
 
         Parameters
@@ -637,11 +631,8 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         return self
 
     def fit(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        **fit_params: Any
-    ) -> 'ModifiedCatBoostClassifier':
+        self, X: np.ndarray, y: np.ndarray, **fit_params: Any
+    ) -> "ModifiedCatBoostClassifier":
         """Fit the model according to the given training data.
 
         Parameters
@@ -660,7 +651,7 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         X = pd.DataFrame(X)
         y = self._encoder.fit_transform(y)
         cat_features = get_categorical_cols(X, labels=True)
-        fit_params['cat_features'] = cat_features
+        fit_params["cat_features"] = cat_features
 
         self._model.fit(X, y, **fit_params)
 
@@ -681,7 +672,7 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         """
         y_pred = self._model.predict(X)
         y_pred = np.ravel(y_pred)
-        y_pred = y_pred.astype('int64')
+        y_pred = y_pred.astype("int64")
 
         return self._encoder.inverse_transform(y_pred)
 
@@ -736,7 +727,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
         return params
 
-    def set_params(self, **params: Any) -> 'ModifiedCatBoostRegressor':
+    def set_params(self, **params: Any) -> "ModifiedCatBoostRegressor":
         """Set the parameters of this estimator.
 
         Parameters
@@ -757,11 +748,8 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         return self
 
     def fit(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        **fit_params: Any
-    ) -> 'ModifiedCatBoostRegressor':
+        self, X: np.ndarray, y: np.ndarray, **fit_params: Any
+    ) -> "ModifiedCatBoostRegressor":
         """Fit the model according to the given training data.
 
         Parameters
@@ -779,7 +767,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         """
         X = pd.DataFrame(X)
         cat_features = get_categorical_cols(X, labels=True)
-        fit_params['cat_features'] = cat_features
+        fit_params["cat_features"] = cat_features
 
         self._model.fit(X, y, **fit_params)
 
@@ -793,10 +781,8 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
         self.transformers = transformers
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'ModifiedColumnTransformer':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "ModifiedColumnTransformer":
         """Fit the model according to the given training data.
 
         Parameters
@@ -820,7 +806,7 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             if callable(cols):
                 cols = cols(X)
 
-            if t == 'drop':
+            if t == "drop":
                 continue
 
             elif isinstance(t, BaseEstimator):
@@ -873,7 +859,7 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         shuffle: bool = True,
         subsample: Union[int, float] = 0.75,
         threshold: Optional[Union[float, str]] = None,
-        use_pimp: bool = False
+        use_pimp: bool = False,
     ) -> None:
         self.estimator = estimator
         self.random_state = random_state
@@ -883,11 +869,8 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         self.use_pimp = use_pimp
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None,
-        **fit_params: Any
-    ) -> 'ModifiedSelectFromModel':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None, **fit_params: Any
+    ) -> "ModifiedSelectFromModel":
         """Fit the model according to the given training data.
 
         Parameters
@@ -908,7 +891,7 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
             y,
             random_state=self.random_state,
             train_size=self.subsample,
-            shuffle=self.shuffle
+            shuffle=self.shuffle,
         )
 
         self.estimator_ = clone(self.estimator)
@@ -919,10 +902,7 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
             from sklearn.inspection import permutation_importance
 
             self.feature_importances_ = permutation_importance(
-                self.estimator_,
-                X_test,
-                y_test,
-                random_state=self.random_state
+                self.estimator_, X_test, y_test, random_state=self.random_state
             ).importances_mean
 
         else:
@@ -958,7 +938,7 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         n_dropped_features = n_features - np.sum(cols)
 
         logger.info(
-            '{} dropped {} features.'.format(
+            "{} dropped {} features.".format(
                 self.__class__.__name__, n_dropped_features
             )
         )
@@ -973,10 +953,8 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
         self.threshold = threshold
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'NAValuesThreshold':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "NAValuesThreshold":
         """Fit the model according to the given training data.
 
         Parameters
@@ -1021,7 +999,7 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
         n_dropped_features = n_features - np.sum(cols)
 
         logger.info(
-            '{} dropped {} features.'.format(
+            "{} dropped {} features.".format(
                 self.__class__.__name__, n_dropped_features
             )
         )
@@ -1035,16 +1013,14 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
     def __init__(
         self,
         max_freq: Optional[Union[float, int]] = 1.0,
-        min_freq: Union[float, int] = 1
+        min_freq: Union[float, int] = 1,
     ) -> None:
         self.max_freq = max_freq
         self.min_freq = min_freq
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'NUniqueThreshold':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "NUniqueThreshold":
         """Fit the model according to the given training data.
 
         Parameters
@@ -1101,7 +1077,7 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
         n_dropped_features = n_features - np.sum(cols)
 
         logger.info(
-            '{} dropped {} features.'.format(
+            "{} dropped {} features.".format(
                 self.__class__.__name__, n_dropped_features
             )
         )
@@ -1114,19 +1090,17 @@ class Profiler(BaseEstimator, TransformerMixin):
 
     def __init__(
         self,
-        label_col: str = 'label',
+        label_col: str = "label",
         max_columns: Optional[int] = None,
-        precision: int = 3
+        precision: int = 3,
     ) -> None:
         self.label_col = label_col
         self.max_columns = max_columns
         self.precision = precision
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'Profiler':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "Profiler":
         """Fit the model according to the given training data.
 
         Parameters
@@ -1149,13 +1123,13 @@ class Profiler(BaseEstimator, TransformerMixin):
             data = X.assign(**kwargs)
 
         logger = logging.getLogger(__name__)
-        summary = data.describe(include='all')
+        summary = data.describe(include="all")
 
         with pd.option_context(
-            'display.max_columns',
+            "display.max_columns",
             self.max_columns,
-            'display.precision',
-            self.precision
+            "display.precision",
+            self.precision,
         ):
             logger.info(summary)
 
@@ -1180,14 +1154,12 @@ class Profiler(BaseEstimator, TransformerMixin):
 class RowStatistics(BaseEstimator, TransformerMixin):
     """Row statistics."""
 
-    def __init__(self, dtype: Union[str, Type] = 'float64') -> None:
+    def __init__(self, dtype: Union[str, Type] = "float64") -> None:
         self.dtype = dtype
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'RowStatistics':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "RowStatistics":
         """Fit the model according to the given training data.
 
         Parameters
@@ -1223,7 +1195,7 @@ class RowStatistics(BaseEstimator, TransformerMixin):
 
         is_null = X.isnull()
 
-        Xt['number_of_na_values'] = is_null.sum(axis=1)
+        Xt["number_of_na_values"] = is_null.sum(axis=1)
 
         return Xt.astype(self.dtype)
 
@@ -1235,10 +1207,8 @@ class SortSamples(BaseEstimator, TransformerMixin):
         self.by = by
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'SortSamples':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "SortSamples":
         """Fit the model according to the given training data.
 
         Parameters
@@ -1290,14 +1260,12 @@ class SortSamples(BaseEstimator, TransformerMixin):
 class TextStatistics(BaseEstimator, TransformerMixin):
     """Text statistics."""
 
-    def __init__(self, dtype: Union[str, Type] = 'float64') -> None:
+    def __init__(self, dtype: Union[str, Type] = "float64") -> None:
         self.dtype = dtype
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: Optional[pd.Series] = None
-    ) -> 'TextStatistics':
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "TextStatistics":
         """Fit the model according to the given training data.
 
         Parameters
@@ -1332,6 +1300,6 @@ class TextStatistics(BaseEstimator, TransformerMixin):
         Xt = pd.DataFrame()
 
         for col in X:
-            Xt['{}_len'.format(col)] = X[col].str.len()
+            Xt["{}_len".format(col)] = X[col].str.len()
 
         return Xt
