@@ -946,6 +946,54 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         return X.loc[:, cols]
 
 
+class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
+    """Standardize features."""
+
+    def fit(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "ModifiedStandardScaler":
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = pd.DataFrame(X)
+
+        self.mean_ = X.mean()
+        self.std_ = X.std()
+        self.scale_ = self.std_.copy()
+        self.scale_[self.scale_ == 0.0] = 1.0
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+
+        return (X - self.mean_) / self.scale_
+
+
 class NAValuesThreshold(BaseEstimator, TransformerMixin):
     """Feature selector that removes features with many missing values."""
 
