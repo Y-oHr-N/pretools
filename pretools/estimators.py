@@ -775,7 +775,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
 
 class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
-    """Modified ColumnTransoformer."""
+    """Modified ColumnTransformer."""
 
     def __init__(self, transformers: List[Tuple]) -> None:
         self.transformers = transformers
@@ -806,10 +806,7 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             if callable(cols):
                 cols = cols(X)
 
-            if t == "drop":
-                continue
-
-            elif isinstance(t, BaseEstimator):
+            if isinstance(t, BaseEstimator):
                 t = clone(t)
 
                 t.fit(X.loc[:, cols], y)
@@ -832,7 +829,6 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             Transformed data.
         """
         X = pd.DataFrame(X)
-
         Xs = []
 
         for _, t, cols in self.transformers_:
@@ -842,11 +838,58 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
                 Xt = t.transform(Xt)
                 Xt = pd.DataFrame(Xt)
 
+            if t == "drop":
+                continue
+
             Xs.append(Xt)
 
-        Xt = pd.concat(Xs, axis=1)
+        return pd.concat(Xs, axis=1)
 
-        return Xt
+    def fit_transform(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> pd.DataFrame:
+        """Fit to data, then transform it.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+        Xs = []
+
+        self.transformers_ = []
+
+        for name, t, cols in self.transformers:
+            if callable(cols):
+                cols = cols(X)
+
+            Xt = X.loc[:, cols]
+
+            if isinstance(t, BaseEstimator):
+                t = clone(t)
+
+                if hasattr(t, "fit_transform"):
+                    Xt = t.fit_transform(Xt, y)
+                else:
+                    Xt = t.fit(Xt, y).transform(Xt)
+
+                Xt = pd.DataFrame(Xt)
+
+            if t != "drop":
+                Xs.append(Xt)
+
+            self.transformers_.append((name, t, cols))
+
+        return pd.concat(Xs, axis=1)
 
 
 class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
