@@ -64,3 +64,8 @@ def get_unknown_cols(X: pd.DataFrame, labels: bool = False) -> pd.Series:
         return X.columns[is_unknown]
 
     return is_unknown
+
+
+def sigmoid(x: float, a: float = 1.0) -> float:
+    """Sigmoid function."""
+    return 1.0 / (1.0 + np.exp(-a * x))

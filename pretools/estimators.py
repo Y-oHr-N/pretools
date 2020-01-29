@@ -21,7 +21,10 @@ from sklearn.base import RegressorMixin
 from sklearn.base import clone
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import BaseCrossValidator
+from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.multiclass import type_of_target
 
 try:  # scikit-learn<=0.21
     from sklearn.feature_selection.from_model import _calculate_threshold
@@ -34,6 +37,7 @@ from .utils import get_categorical_cols
 from .utils import get_numerical_cols
 from .utils import get_time_cols
 from .utils import get_unknown_cols
+from .utils import sigmoid
 
 
 class Astype(BaseEstimator, TransformerMixin):
@@ -1035,6 +1039,112 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
         X = pd.DataFrame(X)
 
         return (X - self.mean_) / self.scale_
+
+
+class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
+    def __init__(
+        self,
+        cv: Union[BaseCrossValidator, int] = 5,
+        dtype: Union[str, Type] = "float64",
+        min_samples_leaf: int = 1,
+        smoothing: float = 1.0,
+    ) -> None:
+        self.cv = cv
+        self.dtype = dtype
+        self.min_samples_leaf = min_samples_leaf
+        self.smoothing = smoothing
+
+    def _create_mapping(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series
+    ) -> Dict[str, pd.Series]:
+        mapping = {}
+        prior = y.mean()
+
+        for col in X:
+            grouped = y.groupby(X[col])
+            stats = grouped.aggregate(["count", "mean"])
+            smoove = sigmoid(
+                (stats["count"] - self.min_samples_leaf) / self.smoothing
+            )
+            smoothing = (1.0 - smoove) * prior + smoove * stats["mean"]
+            # smoothing[stats["count"] == 1] = prior
+            mapping[col] = smoothing
+
+        return mapping
+
+    def _tartget_encode(
+        self,
+        X: pd.DataFrame,
+        mapping: Dict[str, pd.Series]
+    ) -> pd.DataFrame:
+        Xt = X.copy()
+
+        for col in X:
+            Xt[col] = Xt[col].map(mapping[col])
+
+        return Xt.astype(self.dtype)
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        groups: Optional[pd.Series] = None
+    ) -> "ModifiedTargetEncoder":
+        target_type = type_of_target(y)
+
+        # if target_type != "continuous":
+        #     raise NotImplementedError()
+
+        X = pd.DataFrame(X)
+        y = pd.Series(y, index=X.index)
+
+        self.mapping_ = self._create_mapping(X, y)
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        X = pd.DataFrame(X)
+
+        return self._tartget_encode(X, self.mapping_)
+
+    def fit_transform(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        groups: Optional[pd.Series] = None
+    ) -> pd.DataFrame:
+        self.fit(X, y, groups=groups)
+
+        target_type = type_of_target(y)
+        is_classifier = target_type in [
+            "binary",
+            "multiclass",
+            "multiclass-output",
+            "multilabel-indicator",
+        ]
+        cv = check_cv(self.cv, y, is_classifier)
+        X = pd.DataFrame(X)
+        y = pd.Series(y, index=X.index)
+        Xt = np.full_like(X, np.nan, dtype=self.dtype)
+        Xt = pd.DataFrame(Xt, columns=X.columns, index=X.index)
+
+        for train, test in cv.split(X, y, groups=groups):
+            mapping = self._create_mapping(X.iloc[train], y.iloc[train])
+            Xt.iloc[test] = self._tartget_encode(X.iloc[test], mapping)
+
+        return Xt
+
+    def partial_fit(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        groups: Optional[pd.Series] = None
+    ) -> "ModifiedTargetEncoder":
+        raise NotImplementedError()
+
+        return self
 
 
 class NAValuesThreshold(BaseEstimator, TransformerMixin):
