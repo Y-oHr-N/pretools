@@ -1272,8 +1272,6 @@ class SortSamples(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        self.id_ = id(X)
-
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
@@ -1289,18 +1287,36 @@ class SortSamples(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        test_id = id(X)
+        return pd.DataFrame(X)
+
+    def fit_transform(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> pd.DataFrame:
+        """Fit to data, then transform it.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
         X = pd.DataFrame(X)
 
-        if test_id == self.id_:
-            if self.by is None:
-                by = get_time_cols(X, labels=True)
-                by = list(by)
-            else:
-                by = self.by
+        if self.by is None:
+            by = get_time_cols(X, labels=True)
+            by = list(by)
+        else:
+            by = self.by
 
-            if by:
-                X = X.sort_values(by)
+        if by:
+            X = X.sort_values(by)
 
         return X
 
