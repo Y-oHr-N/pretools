@@ -844,9 +844,59 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
 
             Xs.append(Xt)
 
-        Xt = pd.concat(Xs, axis=1)
+        return pd.concat(Xs, axis=1)
 
-        return Xt
+    def fit_transform(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> pd.DataFrame:
+        """Fit to data, then transform it.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = pd.DataFrame(X)
+
+        Xs = []
+
+        self.transformers_ = []
+
+        for name, t, cols in self.transformers:
+            if callable(cols):
+                cols = cols(X)
+
+            Xt = X.loc[:, cols]
+
+            if t == "drop":
+                continue
+
+            elif isinstance(t, BaseEstimator):
+                t = clone(t)
+
+                if hasattr(t, "fit_transform"):
+                    Xt = t.fit_transform(Xt, y)
+
+                else:
+                    t.fit(Xt, y)
+
+                    Xt = t.transform(Xt)
+
+                Xt = pd.DataFrame(Xt)
+
+            Xs.append(Xt)
+
+            self.transformers_.append((name, t, cols))
+
+        return pd.concat(Xs, axis=1)
 
 
 class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
