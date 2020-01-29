@@ -775,7 +775,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
 
 class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
-    """Modified ColumnTransoformer."""
+    """Modified ColumnTransformer."""
 
     def __init__(self, transformers: List[Tuple]) -> None:
         self.transformers = transformers
@@ -806,10 +806,7 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             if callable(cols):
                 cols = cols(X)
 
-            if t == "drop":
-                continue
-
-            elif isinstance(t, BaseEstimator):
+            if isinstance(t, BaseEstimator):
                 t = clone(t)
 
                 t.fit(X.loc[:, cols], y)
@@ -832,7 +829,6 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             Transformed data.
         """
         X = pd.DataFrame(X)
-
         Xs = []
 
         for _, t, cols in self.transformers_:
@@ -841,6 +837,9 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             if isinstance(t, BaseEstimator):
                 Xt = t.transform(Xt)
                 Xt = pd.DataFrame(Xt)
+
+            if t == "drop":
+                continue
 
             Xs.append(Xt)
 
@@ -865,7 +864,6 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
             Transformed data.
         """
         X = pd.DataFrame(X)
-
         Xs = []
 
         self.transformers_ = []
@@ -876,23 +874,18 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
 
             Xt = X.loc[:, cols]
 
-            if t == "drop":
-                continue
-
-            elif isinstance(t, BaseEstimator):
+            if isinstance(t, BaseEstimator):
                 t = clone(t)
 
                 if hasattr(t, "fit_transform"):
                     Xt = t.fit_transform(Xt, y)
-
                 else:
-                    t.fit(Xt, y)
-
-                    Xt = t.transform(Xt)
+                    Xt = t.fit(Xt, y).transform(Xt)
 
                 Xt = pd.DataFrame(Xt)
 
-            Xs.append(Xt)
+            if t != "drop":
+                Xs.append(Xt)
 
             self.transformers_.append((name, t, cols))
 
