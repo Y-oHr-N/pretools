@@ -1054,7 +1054,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         self.min_samples_leaf = min_samples_leaf
         self.smoothing = smoothing
 
-    def _create_mapping(
+    def _target_encode_fit(
         self,
         X: pd.DataFrame,
         y: pd.Series
@@ -1074,7 +1074,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
 
         return mapping
 
-    def _tartget_encode(
+    def _tartget_encode_transform(
         self,
         X: pd.DataFrame,
         mapping: Dict[str, pd.Series]
@@ -1100,14 +1100,14 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         X = pd.DataFrame(X)
         y = pd.Series(y, index=X.index)
 
-        self.mapping_ = self._create_mapping(X, y)
+        self.mapping_ = self._target_encode_fit(X, y)
 
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
         X = pd.DataFrame(X)
 
-        return self._tartget_encode(X, self.mapping_)
+        return self._tartget_encode_transform(X, self.mapping_)
 
     def fit_transform(
         self,
@@ -1131,8 +1131,10 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         Xt = pd.DataFrame(Xt, columns=X.columns, index=X.index)
 
         for train, test in cv.split(X, y, groups=groups):
-            mapping = self._create_mapping(X.iloc[train], y.iloc[train])
-            Xt.iloc[test] = self._tartget_encode(X.iloc[test], mapping)
+            mapping = self._target_encode_fit(X.iloc[train], y.iloc[train])
+            Xt.iloc[test] = self._tartget_encode_transform(
+                X.iloc[test], mapping
+            )
 
         return Xt
 
