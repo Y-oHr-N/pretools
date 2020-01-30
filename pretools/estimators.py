@@ -1111,10 +1111,14 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         """
         target_type = type_of_target(y)
 
-        # if target_type != "continuous":
-        #     raise NotImplementedError()
+        if target_type not in ["binary", "continuous"]:
+            raise NotImplementedError(
+                "{} is not supported.".format(target_type)
+            )
 
+        encoder = LabelEncoder()
         X = pd.DataFrame(X)
+        y = encoder.fit_transform(y)
         y = pd.Series(y, index=X.index)
 
         self.mapping_ = self._target_encode_fit(X, y)
@@ -1162,14 +1166,11 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         self.fit(X, y, groups=groups)
 
         target_type = type_of_target(y)
-        is_classifier = target_type in [
-            "binary",
-            "multiclass",
-            "multiclass-output",
-            "multilabel-indicator",
-        ]
+        is_classifier = target_type in ["binary", "multiclass"]
         cv = check_cv(self.cv, y, is_classifier)
+        encoder = LabelEncoder()
         X = pd.DataFrame(X)
+        y = encoder.fit_transform(y)
         y = pd.Series(y, index=X.index)
         Xt = np.full_like(X, np.nan, dtype=self.dtype)
         Xt = pd.DataFrame(Xt, columns=X.columns, index=X.index)
