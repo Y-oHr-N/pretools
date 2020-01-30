@@ -1138,16 +1138,6 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
 
         return Xt
 
-    def partial_fit(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-        groups: Optional[pd.Series] = None
-    ) -> "ModifiedTargetEncoder":
-        raise NotImplementedError()
-
-        return self
-
 
 class NAValuesThreshold(BaseEstimator, TransformerMixin):
     """Feature selector that removes features with many missing values."""
