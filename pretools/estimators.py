@@ -1042,6 +1042,8 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
 
 
 class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
+    """Modified TargetEncoder."""
+
     def __init__(
         self,
         cv: Union[BaseCrossValidator, int] = 5,
@@ -1092,6 +1094,21 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         y: pd.Series,
         groups: Optional[pd.Series] = None
     ) -> "ModifiedTargetEncoder":
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
         target_type = type_of_target(y)
 
         # if target_type != "continuous":
@@ -1105,6 +1122,18 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
         X = pd.DataFrame(X)
 
         return self._tartget_encode_transform(X, self.mapping_)
@@ -1115,6 +1144,21 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         y: pd.Series,
         groups: Optional[pd.Series] = None
     ) -> pd.DataFrame:
+        """Fit to data, then transform it.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
         self.fit(X, y, groups=groups)
 
         target_type = type_of_target(y)
