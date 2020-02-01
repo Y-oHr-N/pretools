@@ -6,6 +6,13 @@ import numpy as np
 import pandas as pd
 
 
+def check_X(X: pd.DataFrame) -> pd.DataFrame:
+    if isinstance(X, pd.DataFrame):
+        return X
+
+    return pd.DataFrame(X)
+
+
 def get_categorical_cols(X: pd.DataFrame, labels: bool = False) -> pd.Series:
     """Get categorical columns."""
     X = pd.DataFrame(X)
