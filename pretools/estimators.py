@@ -40,6 +40,9 @@ from .utils import get_unknown_cols
 class Astype(BaseEstimator, TransformerMixin):
     """Astype."""
 
+    def __init__(self, copy: bool = True) -> None:
+        self.copy = copy
+
     def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "Astype":
         """Fit the model according to the given training data.
 
@@ -72,17 +75,20 @@ class Astype(BaseEstimator, TransformerMixin):
             Transformed data.
         """
         X = check_X(X)
-        Xt = X.copy()
+
+        if self.copy:
+            X = X.copy()
+
         numerical_cols = get_numerical_cols(X, labels=True)
         unknown_cols = get_unknown_cols(X, labels=True)
 
         if len(numerical_cols) > 0:
-            Xt[numerical_cols] = Xt[numerical_cols].astype("float32")
+            X[numerical_cols] = X[numerical_cols].astype("float32")
 
         if len(unknown_cols) > 0:
-            Xt[unknown_cols] = Xt[unknown_cols].astype("category")
+            X[unknown_cols] = X[unknown_cols].astype("category")
 
-        return Xt
+        return X
 
 
 class CalendarFeatures(BaseEstimator, TransformerMixin):
@@ -244,7 +250,13 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
 class ClippedFeatures(BaseEstimator, TransformerMixin):
     """Clipped features."""
 
-    def __init__(self, high: float = 0.99, low: float = 0.01) -> None:
+    def __init__(
+        self,
+        copy: bool = True,
+        high: float = 0.99,
+        low: float = 0.01,
+    ) -> None:
+        self.copy = copy
         self.high = high
         self.low = low
 
@@ -288,7 +300,12 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
         """
         X = check_X(X)
 
-        return X.clip(self.data_min_, self.data_max_, axis=1)
+        if self.copy:
+            X = X.copy()
+
+        X.clip(self.data_min_, self.data_max_, axis=1, inplace=True)
+
+        return X
 
 
 class CombinedFeatures(BaseEstimator, TransformerMixin):
@@ -1296,7 +1313,12 @@ class RowStatistics(BaseEstimator, TransformerMixin):
 class SortSamples(BaseEstimator, TransformerMixin):
     """Transformer that sorts samples."""
 
-    def __init__(self, by: Optional[Union[List[str], str]] = None) -> None:
+    def __init__(
+        self,
+        copy: bool = True,
+        by: Optional[Union[List[str], str]] = None,
+    ) -> None:
+        self.copy = copy
         self.by = by
 
     def fit(
@@ -1361,7 +1383,10 @@ class SortSamples(BaseEstimator, TransformerMixin):
             by = self.by
 
         if by:
-            X = X.sort_values(by)
+            if self.copy:
+                X = X.copy()
+
+            X.sort_values(by, inplace=True)
 
         return X
 
@@ -1369,7 +1394,12 @@ class SortSamples(BaseEstimator, TransformerMixin):
 class TextStatistics(BaseEstimator, TransformerMixin):
     """Text statistics."""
 
-    def __init__(self, dtype: Union[str, Type] = "float64") -> None:
+    def __init__(
+        self,
+        copy: bool = True,
+        dtype: Union[str, Type] = "float64",
+    ) -> None:
+        self.copy = copy
         self.dtype = dtype
 
     def fit(
@@ -1406,9 +1436,13 @@ class TextStatistics(BaseEstimator, TransformerMixin):
             Transformed data.
         """
         X = check_X(X)
-        Xt = pd.DataFrame()
+
+        if self.copy:
+            X = X.copy()
 
         for col in X:
-            Xt["{}_len".format(col)] = X[col].str.len()
+            X[col] = X[col].str.len()
 
-        return Xt
+        X.rename(columns="{}_len".format, inplace=True)
+
+        return X
