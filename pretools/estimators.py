@@ -1380,11 +1380,6 @@ class SortSamples(BaseEstimator, TransformerMixin):
         """
         X = check_X(X)
 
-        if self.copy:
-            Xt = X.copy()
-        else:
-            Xt = X
-
         if self.by is None:
             by = get_time_cols(X, labels=True)
             by = list(by)
@@ -1392,9 +1387,12 @@ class SortSamples(BaseEstimator, TransformerMixin):
             by = self.by
 
         if by:
-            Xt.sort_values(by, inplace=True)
+            if self.copy:
+                X = X.copy()
 
-        return Xt
+            X.sort_values(by, inplace=True)
+
+        return X
 
 
 class TextStatistics(BaseEstimator, TransformerMixin):
