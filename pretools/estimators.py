@@ -77,20 +77,18 @@ class Astype(BaseEstimator, TransformerMixin):
         X = check_X(X)
 
         if self.copy:
-            Xt = X.copy()
-        else:
-            Xt = X
+            X = X.copy()
 
         numerical_cols = get_numerical_cols(X, labels=True)
         unknown_cols = get_unknown_cols(X, labels=True)
 
         if len(numerical_cols) > 0:
-            Xt[numerical_cols] = Xt[numerical_cols].astype("float32")
+            X[numerical_cols] = X[numerical_cols].astype("float32")
 
         if len(unknown_cols) > 0:
-            Xt[unknown_cols] = Xt[unknown_cols].astype("category")
+            X[unknown_cols] = X[unknown_cols].astype("category")
 
-        return Xt
+        return X
 
 
 class CalendarFeatures(BaseEstimator, TransformerMixin):
@@ -303,13 +301,11 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
         X = check_X(X)
 
         if self.copy:
-            Xt = X.copy()
-        else:
-            Xt = X
+            X = X.copy()
 
-        Xt.clip(self.data_min_, self.data_max_, axis=1, inplace=True)
+        X.clip(self.data_min_, self.data_max_, axis=1, inplace=True)
 
-        return Xt
+        return X
 
 
 class CombinedFeatures(BaseEstimator, TransformerMixin):
@@ -1442,13 +1438,11 @@ class TextStatistics(BaseEstimator, TransformerMixin):
         X = check_X(X)
 
         if self.copy:
-            Xt = X.copy()
-        else:
-            Xt = X
+            X = X.copy()
 
         for col in X:
-            Xt[col] = Xt[col].str.len()
+            X[col] = X[col].str.len()
 
-        Xt.rename(columns="{}_len".format, inplace=True)
+        X.rename(columns="{}_len".format, inplace=True)
 
-        return Xt
+        return X
