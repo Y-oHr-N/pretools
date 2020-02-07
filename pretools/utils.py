@@ -7,6 +7,24 @@ import pandas as pd
 
 
 def check_X(X: pd.DataFrame) -> pd.DataFrame:
+    """Check `X`.
+
+    Parameters
+    ----------
+    X
+        Data.
+
+    estimator
+        Object to use to fit the data.
+
+    **kwargs
+        Other keywords passed to `sklearn.utils.check_array`.
+
+    Returns
+    -------
+    X
+        Converted and validated data.
+    """
     if isinstance(X, pd.DataFrame):
         return X
 
