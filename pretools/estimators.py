@@ -146,7 +146,7 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(X, dtype=None)
 
         secondsinminute = 60.0
         secondsinhour = 60.0 * secondsinminute
@@ -209,7 +209,7 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(X, dtype=None)
         Xt = pd.DataFrame()
 
         for col in X:
@@ -1544,7 +1544,7 @@ class SortSamples(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        return check_X(X)
+        return check_X(X, dtype=None)
 
     def fit_transform(
         self, X: pd.DataFrame, y: Optional[pd.Series] = None
@@ -1564,7 +1564,7 @@ class SortSamples(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(X, dtype=None)
 
         if self.by is None:
             by = get_time_cols(X, labels=True)
