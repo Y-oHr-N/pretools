@@ -334,6 +334,64 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         self.max_features = max_features
         self.operands = operands
 
+    def _numerical_transform(
+        self,
+        X: pd.DataFrame,
+        max_features: int,
+    ) -> pd.DataFrame:
+        Xt = pd.DataFrame()
+        n_features = 0
+
+        for col1, col2 in itertools.combinations(X.columns, 2):
+            for operand in self._operands:
+                if n_features >= max_features:
+                    break
+
+                func = getattr(np, operand)
+
+                Xt["{}_{}_{}".format(operand, col1, col2)] = func(
+                    X[col1], X[col2]
+                )
+
+                n_features += 1
+
+        return Xt
+
+    def _other_transform(
+        self,
+        X: pd.DataFrame,
+        max_features: int,
+    ) -> pd.DataFrame:
+        Xt = pd.DataFrame()
+        n_features = 0
+
+        for col1, col2 in itertools.combinations(X.columns, 2):
+            for operand in self._operands:
+                if n_features >= max_features:
+                    break
+
+                if operand == "multiply":
+                    func = np.vectorize(lambda x1, x2: "{}*{}".format(x1, x2))
+                elif operand == "equal":
+                    func = np.equal
+                else:
+                    continue
+
+                try:
+                    feature = func(X[col1], X[col2])
+                except TypeError:
+                    continue
+
+                if operand == "multiply":
+                    feature = pd.Series(feature, index=X.index)
+                    feature = feature.astype("category")
+
+                Xt["{}_{}_{}".format(operand, col1, col2)] = feature
+
+                n_features += 1
+
+        return Xt
+
     def fit(
         self, X: pd.DataFrame, y: Optional[pd.Series] = None
     ) -> "CombinedFeatures":
@@ -359,7 +417,10 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         if self.max_features is None:
             self.max_features_ = np.inf
         elif self.max_features == "auto":
-            self.max_features_ = self.n_samples_ - self.n_features_ - 1
+            if self.include_data:
+                self.max_features_ = self.n_samples_ - self.n_features_ - 1
+            else:
+                self.max_features_ = self.n_samples_ - 1
         else:
             self.max_features_ = self.max_features
 
@@ -379,53 +440,22 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
             Transformed data.
         """
         X = check_X(X)
-        Xt = pd.DataFrame()
         is_numerical = get_numerical_cols(X)
-        numerical_cols = X.columns[is_numerical]
-        other_cols = X.columns[~is_numerical]
-
-        n_features = 0
 
         logger = logging.getLogger(__name__)
 
-        for col1, col2 in itertools.combinations(other_cols, 2):
-            for operand in self._operands:
-                if n_features >= self.max_features_:
-                    break
+        Xt_numerical = self._numerical_transform(
+            X.loc[:, is_numerical],
+            self.max_features_,
+        )
+        _, n_created_features = Xt_numerical.shape
 
-                if operand == "multiply":
-                    func = np.vectorize(lambda x1, x2: "{}*{}".format(x1, x2))
-                elif operand == "equal":
-                    func = np.equal
-                else:
-                    continue
+        Xt_other = self._other_transform(
+            X.loc[:, ~is_numerical],
+            self.max_features_ - n_created_features,
+        )
 
-                try:
-                    feature = func(X[col1], X[col2])
-                except TypeError:
-                    continue
-
-                if operand == "multiply":
-                    feature = pd.Series(feature, index=X.index)
-                    feature = feature.astype("category")
-
-                Xt["{}_{}_{}".format(operand, col1, col2)] = feature
-
-                n_features += 1
-
-        for col1, col2 in itertools.combinations(numerical_cols, 2):
-            for operand in self._operands:
-                if n_features >= self.max_features_:
-                    break
-
-                func = getattr(np, operand)
-
-                Xt["{}_{}_{}".format(operand, col1, col2)] = func(
-                    X[col2], X[col2]
-                )
-
-                n_features += 1
-
+        Xt = pd.concat([Xt_numerical, Xt_other], axis=1)
         _, n_created_features = Xt.shape
 
         logger.info(
