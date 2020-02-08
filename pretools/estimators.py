@@ -1220,7 +1220,16 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
 
 
 class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
-    """Modified TargetEncoder."""
+    """Modified TargetEncoder.
+
+    Examples
+    --------
+    >>> from pretools.estimators import ModifiedTargetEncoder
+    >>> X = [['Cat'], ['Cow'], ['Mouse'], ['Lion']]
+    >>> y = [0, 1, 1, 0]
+    >>> est = ModifiedTargetEncoder(cv=2)
+    >>> Xt = est.fit_transform(X, y)
+    """
 
     def __init__(
         self,
