@@ -1238,7 +1238,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         self,
         X: pd.DataFrame,
         y: pd.Series
-    ) -> Dict[str, pd.Series]:
+    ) -> Tuple[Dict[str, pd.Series], float]:
         mapping = {}
         prior = y.mean()
 
@@ -1252,19 +1252,23 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
             # smoothing[stats["count"] == 1] = prior
             mapping[col] = smoothing
 
-        return mapping
+        return mapping, prior
 
     def _tartget_encode_transform(
         self,
         X: pd.DataFrame,
-        mapping: Dict[str, pd.Series]
+        mapping: Dict[str, pd.Series],
+        prior: float,
     ) -> pd.DataFrame:
         Xt = X.copy()
 
         for col in X:
             Xt[col] = Xt[col].map(mapping[col])
+            Xt[col] = Xt[col].astype(self.dtype)
+            is_null = Xt[col].isnull()
+            Xt.loc[is_null, col] = prior
 
-        return Xt.astype(self.dtype)
+        return Xt
 
     def fit(
         self,
@@ -1301,7 +1305,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         y = encoder.fit_transform(y)
         y = pd.Series(y, index=X.index)
 
-        self.mapping_ = self._target_encode_fit(X, y)
+        self.mapping_, self.prior_ = self._target_encode_fit(X, y)
 
         return self
 
@@ -1322,7 +1326,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
             X, dtype=None, estimator=self, force_all_finite="allow-nan"
         )
 
-        return self._tartget_encode_transform(X, self.mapping_)
+        return self._tartget_encode_transform(X, self.mapping_, self.prior_)
 
     def fit_transform(
         self,
@@ -1360,9 +1364,11 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         Xt = pd.DataFrame(Xt, columns=X.columns, index=X.index)
 
         for train, test in cv.split(X, y, groups=groups):
-            mapping = self._target_encode_fit(X.iloc[train], y.iloc[train])
+            mapping, prior = self._target_encode_fit(
+                X.iloc[train], y.iloc[train]
+            )
             Xt.iloc[test] = self._tartget_encode_transform(
-                X.iloc[test], mapping
+                X.iloc[test], mapping, prior
             )
 
         return Xt
