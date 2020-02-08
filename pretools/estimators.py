@@ -1295,7 +1295,9 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
             )
 
         encoder = LabelEncoder()
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         y = encoder.fit_transform(y)
         y = pd.Series(y, index=X.index)
 
@@ -1316,7 +1318,9 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         return self._tartget_encode_transform(X, self.mapping_)
 
@@ -1347,7 +1351,9 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         is_classifier = target_type in ["binary", "multiclass"]
         cv = check_cv(self.cv, y, is_classifier)
         encoder = LabelEncoder()
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         y = encoder.fit_transform(y)
         y = pd.Series(y, index=X.index)
         Xt = np.full_like(X, np.nan, dtype=self.dtype)
