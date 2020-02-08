@@ -2,11 +2,15 @@
 
 import logging
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
+from sklearn.utils import check_array
 
-def check_X(X: pd.DataFrame) -> pd.DataFrame:
+
+def check_X(X: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
     """Check `X`.
 
     Parameters
@@ -25,10 +29,11 @@ def check_X(X: pd.DataFrame) -> pd.DataFrame:
     X
         Converted and validated data.
     """
-    if isinstance(X, pd.DataFrame):
-        return X
+    if not isinstance(X, pd.DataFrame):
+        X = check_array(X, **kwargs)
+        X = pd.DataFrame(X)
 
-    return pd.DataFrame(X)
+    return X
 
 
 def get_categorical_cols(X: pd.DataFrame, labels: bool = False) -> pd.Series:

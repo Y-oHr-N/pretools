@@ -83,7 +83,9 @@ class Astype(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         if self.copy:
             X = X.copy()
@@ -146,7 +148,9 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         secondsinminute = 60.0
         secondsinhour = 60.0 * secondsinminute
@@ -209,7 +213,9 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         Xt = pd.DataFrame()
 
         for col in X:
@@ -311,7 +317,7 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         self.data_max_ = X.quantile(q=self.high)
         self.data_min_ = X.quantile(q=self.low)
@@ -331,7 +337,7 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         if self.copy:
             X = X.copy()
@@ -452,7 +458,9 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         self.n_samples_, self.n_features_ = X.shape
 
@@ -481,7 +489,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(X, dtype=None, force_all_finite="allow-nan")
         is_numerical = get_numerical_cols(X)
 
         logger = logging.getLogger(__name__)
@@ -517,9 +525,10 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
 
     Examples
     --------
+    >>> import numpy as np
     >>> from pretools.estimators import DiffFeatures
     >>> est = DiffFeatures()
-    >>> X = [[1], [1], [1], [10], [1]]
+    >>> X = [[1], [np.nan], [1], [10], [1]]
     >>> Xt = est.fit_transform(X)
     """
 
@@ -559,7 +568,7 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
         Xt = X.diff()
 
         Xt.rename(columns="{}_diff".format, inplace=True)
@@ -614,7 +623,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         X, _, = train_test_split(
             X,
@@ -640,7 +649,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         triu = np.triu(self.corr_, k=1)
         triu = np.abs(triu)
@@ -766,7 +775,9 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         y = self._encoder.fit_transform(y)
         cat_features = get_categorical_cols(X, labels=True)
         fit_params["cat_features"] = cat_features
@@ -894,7 +905,9 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         cat_features = get_categorical_cols(X, labels=True)
         fit_params["cat_features"] = cat_features
 
@@ -936,7 +949,9 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         self.transformers_ = []
 
@@ -966,7 +981,9 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         Xs = []
 
         for _, t, cols in self.transformers_:
@@ -1001,7 +1018,9 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         Xs = []
 
         self.transformers_ = []
@@ -1116,7 +1135,9 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         threshold = _calculate_threshold(
             self.estimator_, self.feature_importances_, self.threshold
@@ -1167,7 +1188,7 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         self.mean_ = X.mean()
         self.std_ = X.std()
@@ -1189,7 +1210,7 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         return (X - self.mean_) / self.scale_
 
@@ -1227,7 +1248,9 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         self.n_samples_, _ = X.shape
         self.count_ = X.count()
@@ -1247,7 +1270,9 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         logger = logging.getLogger(__name__)
 
@@ -1302,7 +1327,9 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         self.n_samples_, _ = X.shape
         self.nunique_ = X.nunique()
@@ -1322,7 +1349,9 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         if self.max_freq is None:
             max_freq = np.inf
@@ -1391,7 +1420,9 @@ class Profiler(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         data = X.copy()
 
         if y is not None:
@@ -1424,7 +1455,9 @@ class Profiler(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        return check_X(X)
+        return check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
 
 class RowStatistics(BaseEstimator, TransformerMixin):
@@ -1475,7 +1508,9 @@ class RowStatistics(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         Xt = pd.DataFrame()
 
         is_null = X.isnull()
@@ -1544,7 +1579,9 @@ class SortSamples(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        return check_X(X)
+        return check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
     def fit_transform(
         self, X: pd.DataFrame, y: Optional[pd.Series] = None
@@ -1564,7 +1601,9 @@ class SortSamples(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         if self.by is None:
             by = get_time_cols(X, labels=True)
@@ -1633,7 +1672,9 @@ class TextStatistics(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = check_X(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         if self.copy:
             X = X.copy()
