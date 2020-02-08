@@ -21,7 +21,10 @@ from sklearn.base import RegressorMixin
 from sklearn.base import clone
 from sklearn.base import TransformerMixin
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import BaseCrossValidator
+from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.multiclass import type_of_target
 
 try:  # scikit-learn<=0.21
     from sklearn.feature_selection.from_model import _calculate_threshold
@@ -35,6 +38,7 @@ from .utils import get_categorical_cols
 from .utils import get_numerical_cols
 from .utils import get_time_cols
 from .utils import get_unknown_cols
+from .utils import sigmoid
 
 
 class Astype(BaseEstimator, TransformerMixin):
@@ -1213,6 +1217,170 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
         X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         return (X - self.mean_) / self.scale_
+
+
+class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
+    """Modified TargetEncoder.
+
+    Examples
+    --------
+    >>> from pretools.estimators import ModifiedTargetEncoder
+    >>> X = [['Cat'], ['Cow'], ['Mouse'], ['Lion']]
+    >>> y = [0, 1, 1, 0]
+    >>> est = ModifiedTargetEncoder(cv=2)
+    >>> Xt = est.fit_transform(X, y)
+    """
+
+    def __init__(
+        self,
+        cv: Union[BaseCrossValidator, int] = 5,
+        dtype: Union[str, Type] = "float64",
+        min_samples_leaf: int = 1,
+        smoothing: float = 1.0,
+    ) -> None:
+        self.cv = cv
+        self.dtype = dtype
+        self.min_samples_leaf = min_samples_leaf
+        self.smoothing = smoothing
+
+    def _target_encode_fit(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series
+    ) -> Tuple[Dict[str, pd.Series], float]:
+        mapping = {}
+        prior = y.mean()
+
+        for col in X:
+            grouped = y.groupby(X[col])
+            stats = grouped.aggregate(["count", "mean"])
+            smoove = sigmoid(
+                (stats["count"] - self.min_samples_leaf) / self.smoothing
+            )
+            smoothing = (1.0 - smoove) * prior + smoove * stats["mean"]
+            # smoothing[stats["count"] == 1] = prior
+            mapping[col] = smoothing
+
+        return mapping, prior
+
+    def _tartget_encode_transform(
+        self,
+        X: pd.DataFrame,
+        mapping: Dict[str, pd.Series],
+        prior: float,
+    ) -> pd.DataFrame:
+        Xt = X.copy()
+
+        for col in X:
+            Xt[col] = Xt[col].map(mapping[col])
+            Xt[col] = Xt[col].astype(self.dtype)
+            is_null = Xt[col].isnull()
+            Xt.loc[is_null, col] = prior
+
+        return Xt
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        groups: Optional[pd.Series] = None
+    ) -> "ModifiedTargetEncoder":
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        target_type = type_of_target(y)
+
+        if target_type not in ["binary", "continuous"]:
+            raise NotImplementedError(
+                "{} is not supported.".format(target_type)
+            )
+
+        encoder = LabelEncoder()
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+        y = encoder.fit_transform(y)
+        y = pd.Series(y, index=X.index)
+
+        self.mapping_, self.prior_ = self._target_encode_fit(X, y)
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+
+        return self._tartget_encode_transform(X, self.mapping_, self.prior_)
+
+    def fit_transform(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        groups: Optional[pd.Series] = None
+    ) -> pd.DataFrame:
+        """Fit to data, then transform it.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        self.fit(X, y, groups=groups)
+
+        target_type = type_of_target(y)
+        is_classifier = target_type in ["binary", "multiclass"]
+        cv = check_cv(self.cv, y, is_classifier)
+        encoder = LabelEncoder()
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+        y = encoder.fit_transform(y)
+        y = pd.Series(y, index=X.index)
+        Xt = np.full_like(X, np.nan, dtype=self.dtype)
+        Xt = pd.DataFrame(Xt, columns=X.columns, index=X.index)
+
+        for train, test in cv.split(X, y, groups=groups):
+            mapping, prior = self._target_encode_fit(
+                X.iloc[train], y.iloc[train]
+            )
+            Xt.iloc[test] = self._tartget_encode_transform(
+                X.iloc[test], mapping, prior
+            )
+
+        return Xt
 
 
 class NAValuesThreshold(BaseEstimator, TransformerMixin):
