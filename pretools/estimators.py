@@ -294,10 +294,7 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
     """
 
     def __init__(
-        self,
-        copy: bool = True,
-        high: float = 0.99,
-        low: float = 0.01,
+        self, copy: bool = True, high: float = 0.99, low: float = 0.01,
     ) -> None:
         self.copy = copy
         self.high = high
@@ -387,9 +384,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         self.operands = operands
 
     def _numerical_transform(
-        self,
-        X: pd.DataFrame,
-        max_features: int,
+        self, X: pd.DataFrame, max_features: int,
     ) -> pd.DataFrame:
         Xt = pd.DataFrame()
         n_features = 0
@@ -410,9 +405,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         return Xt
 
     def _other_transform(
-        self,
-        X: pd.DataFrame,
-        max_features: int,
+        self, X: pd.DataFrame, max_features: int,
     ) -> pd.DataFrame:
         Xt = pd.DataFrame()
         n_features = 0
@@ -499,14 +492,12 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         logger = logging.getLogger(__name__)
 
         Xt_numerical = self._numerical_transform(
-            X.loc[:, is_numerical],
-            self.max_features_,
+            X.loc[:, is_numerical], self.max_features_,
         )
         _, n_created_features = Xt_numerical.shape
 
         Xt_other = self._other_transform(
-            X.loc[:, ~is_numerical],
-            self.max_features_ - n_created_features,
+            X.loc[:, ~is_numerical], self.max_features_ - n_created_features,
         )
 
         Xt = pd.concat([Xt_numerical, Xt_other], axis=1)
@@ -1225,7 +1216,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
     Examples
     --------
     >>> from pretools.estimators import ModifiedTargetEncoder
-    >>> X = [['Cat'], ['Cow'], ['Mouse'], ['Lion']]
+    >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
     >>> y = [0, 1, 1, 0]
     >>> est = ModifiedTargetEncoder(cv=2)
     >>> Xt = est.fit_transform(X, y)
@@ -1244,9 +1235,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         self.smoothing = smoothing
 
     def _target_encode_fit(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series
+        self, X: pd.DataFrame, y: pd.Series
     ) -> Tuple[Dict[str, pd.Series], float]:
         mapping = {}
         prior = y.mean()
@@ -1264,10 +1253,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         return mapping, prior
 
     def _tartget_encode_transform(
-        self,
-        X: pd.DataFrame,
-        mapping: Dict[str, pd.Series],
-        prior: float,
+        self, X: pd.DataFrame, mapping: Dict[str, pd.Series], prior: float,
     ) -> pd.DataFrame:
         Xt = X.copy()
 
@@ -1280,10 +1266,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         return Xt
 
     def fit(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-        groups: Optional[pd.Series] = None
+        self, X: pd.DataFrame, y: pd.Series, groups: Optional[pd.Series] = None
     ) -> "ModifiedTargetEncoder":
         """Fit the model according to the given training data.
 
@@ -1338,10 +1321,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
         return self._tartget_encode_transform(X, self.mapping_, self.prior_)
 
     def fit_transform(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-        groups: Optional[pd.Series] = None
+        self, X: pd.DataFrame, y: pd.Series, groups: Optional[pd.Series] = None
     ) -> pd.DataFrame:
         """Fit to data, then transform it.
 
@@ -1707,9 +1687,7 @@ class SortSamples(BaseEstimator, TransformerMixin):
     """
 
     def __init__(
-        self,
-        copy: bool = True,
-        by: Optional[Union[List[str], str]] = None,
+        self, copy: bool = True, by: Optional[Union[List[str], str]] = None,
     ) -> None:
         self.copy = copy
         self.by = by
@@ -1794,15 +1772,13 @@ class TextStatistics(BaseEstimator, TransformerMixin):
     Examples
     --------
     >>> from pretools.estimators import TextStatistics
-    >>> X = [['Cat'], ['Cow'], ['Mouse'], ['Lion']]
+    >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
     >>> est = TextStatistics()
     >>> Xt = est.fit_transform(X)
     """
 
     def __init__(
-        self,
-        copy: bool = True,
-        dtype: Union[str, Type] = "float64",
+        self, copy: bool = True, dtype: Union[str, Type] = "float64",
     ) -> None:
         self.copy = copy
         self.dtype = dtype
