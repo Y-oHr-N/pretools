@@ -33,6 +33,7 @@ except ImportError:
     from sklearn.feature_selection._from_model import _calculate_threshold
     from sklearn.feature_selection._from_model import _get_feature_importances
 
+from .utils import check_X
 from .utils import get_categorical_cols
 from .utils import get_numerical_cols
 from .utils import get_time_cols
@@ -41,7 +42,19 @@ from .utils import sigmoid
 
 
 class Astype(BaseEstimator, TransformerMixin):
-    """Astype."""
+    """Astype.
+
+    Examples
+    --------
+    >>> from pretools.estimators import Astype
+    >>> from sklearn.datasets import load_iris
+    >>> X, _ = load_iris(return_X_y=True)
+    >>> est = Astype()
+    >>> Xt = est.fit_transform(X)
+    """
+
+    def __init__(self, copy: bool = True) -> None:
+        self.copy = copy
 
     def fit(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> "Astype":
         """Fit the model according to the given training data.
@@ -74,22 +87,42 @@ class Astype(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
-        Xt = X.copy()
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+
+        if self.copy:
+            X = X.copy()
+
         numerical_cols = get_numerical_cols(X, labels=True)
         unknown_cols = get_unknown_cols(X, labels=True)
 
         if len(numerical_cols) > 0:
-            Xt[numerical_cols] = Xt[numerical_cols].astype("float32")
+            X[numerical_cols] = X[numerical_cols].astype("float32")
 
         if len(unknown_cols) > 0:
-            Xt[unknown_cols] = Xt[unknown_cols].astype("category")
+            X[unknown_cols] = X[unknown_cols].astype("category")
 
-        return Xt
+        return X
 
 
 class CalendarFeatures(BaseEstimator, TransformerMixin):
-    """Calendar features."""
+    """Calendar features.
+
+    Examples
+    --------
+    >>> import datetime
+    >>> from pretools.estimators import CalendarFeatures
+    >>> X = [
+    ...     [
+    ...         datetime.datetime(1999, 1, 1),
+    ...         datetime.datetime(1999, 3, 1),
+    ...         datetime.datetime(1999, 2, 1),
+    ...     ]
+    ... ]
+    >>> est = CalendarFeatures()
+    >>> Xt = est.fit_transform(X)
+    """
 
     def __init__(
         self,
@@ -119,7 +152,9 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         secondsinminute = 60.0
         secondsinhour = 60.0 * secondsinminute
@@ -182,7 +217,9 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         Xt = pd.DataFrame()
 
         for col in X:
@@ -245,9 +282,24 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
 
 
 class ClippedFeatures(BaseEstimator, TransformerMixin):
-    """Clipped features."""
+    """Clipped features.
 
-    def __init__(self, high: float = 0.99, low: float = 0.01) -> None:
+    Examples
+    --------
+    >>> from pretools.estimators import ClippedFeatures
+    >>> from sklearn.datasets import load_iris
+    >>> X, _ = load_iris(return_X_y=True)
+    >>> est = ClippedFeatures()
+    >>> Xt = est.fit_transform(X)
+    """
+
+    def __init__(
+        self,
+        copy: bool = True,
+        high: float = 0.99,
+        low: float = 0.01,
+    ) -> None:
+        self.copy = copy
         self.high = high
         self.low = low
 
@@ -269,7 +321,7 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         self.data_max_ = X.quantile(q=self.high)
         self.data_min_ = X.quantile(q=self.low)
@@ -289,13 +341,27 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
-        return X.clip(self.data_min_, self.data_max_, axis=1)
+        if self.copy:
+            X = X.copy()
+
+        X.clip(self.data_min_, self.data_max_, axis=1, inplace=True)
+
+        return X
 
 
 class CombinedFeatures(BaseEstimator, TransformerMixin):
-    """Combined Features."""
+    """Combined Features.
+
+    Examples
+    --------
+    >>> from pretools.estimators import CombinedFeatures
+    >>> from sklearn.datasets import load_iris
+    >>> X, _ = load_iris(return_X_y=True)
+    >>> est = CombinedFeatures()
+    >>> Xt = est.fit_transform(X)
+    """
 
     @property
     def _operands(self) -> List[str]:
@@ -320,63 +386,40 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
         self.max_features = max_features
         self.operands = operands
 
-    def fit(
-        self, X: pd.DataFrame, y: Optional[pd.Series] = None
-    ) -> "CombinedFeatures":
-        """Fit the model according to the given training data.
-
-        Parameters
-        ----------
-        X
-            Training data.
-
-        y
-            Target.
-
-        Returns
-        -------
-        self
-            Return self.
-        """
-        X = pd.DataFrame(X)
-
-        self.n_samples_, self.n_features_ = X.shape
-
-        if self.max_features is None:
-            self.max_features_ = np.inf
-        elif self.max_features == "auto":
-            self.max_features_ = self.n_samples_ - self.n_features_ - 1
-        else:
-            self.max_features_ = self.max_features
-
-        return self
-
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Transform the data.
-
-        Parameters
-        ----------
-        X
-            Data.
-
-        Returns
-        -------
-        Xt
-            Transformed data.
-        """
-        X = pd.DataFrame(X)
+    def _numerical_transform(
+        self,
+        X: pd.DataFrame,
+        max_features: int,
+    ) -> pd.DataFrame:
         Xt = pd.DataFrame()
-        is_numerical = get_numerical_cols(X)
-        numerical_cols = X.columns[is_numerical]
-        other_cols = X.columns[~is_numerical]
-
         n_features = 0
 
-        logger = logging.getLogger(__name__)
-
-        for col1, col2 in itertools.combinations(other_cols, 2):
+        for col1, col2 in itertools.combinations(X.columns, 2):
             for operand in self._operands:
-                if n_features >= self.max_features_:
+                if n_features >= max_features:
+                    break
+
+                func = getattr(np, operand)
+
+                Xt["{}_{}_{}".format(operand, col1, col2)] = func(
+                    X[col1], X[col2]
+                )
+
+                n_features += 1
+
+        return Xt
+
+    def _other_transform(
+        self,
+        X: pd.DataFrame,
+        max_features: int,
+    ) -> pd.DataFrame:
+        Xt = pd.DataFrame()
+        n_features = 0
+
+        for col1, col2 in itertools.combinations(X.columns, 2):
+            for operand in self._operands:
+                if n_features >= max_features:
                     break
 
                 if operand == "multiply":
@@ -399,19 +442,74 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
                 n_features += 1
 
-        for col1, col2 in itertools.combinations(numerical_cols, 2):
-            for operand in self._operands:
-                if n_features >= self.max_features_:
-                    break
+        return Xt
 
-                func = getattr(np, operand)
+    def fit(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> "CombinedFeatures":
+        """Fit the model according to the given training data.
 
-                Xt["{}_{}_{}".format(operand, col1, col2)] = func(
-                    X[col2], X[col2]
-                )
+        Parameters
+        ----------
+        X
+            Training data.
 
-                n_features += 1
+        y
+            Target.
 
+        Returns
+        -------
+        self
+            Return self.
+        """
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+
+        self.n_samples_, self.n_features_ = X.shape
+
+        if self.max_features is None:
+            self.max_features_ = np.inf
+        elif self.max_features == "auto":
+            if self.include_data:
+                self.max_features_ = self.n_samples_ - self.n_features_ - 1
+            else:
+                self.max_features_ = self.n_samples_ - 1
+        else:
+            self.max_features_ = self.max_features
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = check_X(X, dtype=None, force_all_finite="allow-nan")
+        is_numerical = get_numerical_cols(X)
+
+        logger = logging.getLogger(__name__)
+
+        Xt_numerical = self._numerical_transform(
+            X.loc[:, is_numerical],
+            self.max_features_,
+        )
+        _, n_created_features = Xt_numerical.shape
+
+        Xt_other = self._other_transform(
+            X.loc[:, ~is_numerical],
+            self.max_features_ - n_created_features,
+        )
+
+        Xt = pd.concat([Xt_numerical, Xt_other], axis=1)
         _, n_created_features = Xt.shape
 
         logger.info(
@@ -427,7 +525,16 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
 
 class DiffFeatures(BaseEstimator, TransformerMixin):
-    """Diff features."""
+    """Diff features.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pretools.estimators import DiffFeatures
+    >>> est = DiffFeatures()
+    >>> X = [[1], [np.nan], [1], [10], [1]]
+    >>> Xt = est.fit_transform(X)
+    """
 
     def __init__(self, include_data: bool = False) -> None:
         self.include_data = include_data
@@ -465,7 +572,7 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
         Xt = X.diff()
 
         Xt.rename(columns="{}_diff".format, inplace=True)
@@ -477,7 +584,16 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
 
 
 class DropCollinearFeatures(BaseEstimator, TransformerMixin):
-    """Feature selector that removes collinear features."""
+    """Feature selector that removes collinear features.
+
+    Examples
+    --------
+    >>> from pretools.estimators import DropCollinearFeatures
+    >>> from sklearn.datasets import load_iris
+    >>> X, _ = load_iris(return_X_y=True)
+    >>> est = DropCollinearFeatures()
+    >>> Xt = est.fit_transform(X)
+    """
 
     def __init__(
         self,
@@ -511,7 +627,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         X, _, = train_test_split(
             X,
@@ -537,7 +653,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         triu = np.triu(self.corr_, k=1)
         triu = np.abs(triu)
@@ -559,7 +675,18 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
 
 
 class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
-    """Modified CatBoostClassifier."""
+    """Modified CatBoostClassifier.
+
+    Examples
+    --------
+    >>> from pretools.estimators import ModifiedCatBoostClassifier
+    >>> from sklearn.datasets import load_iris
+    >>> X, y = load_iris(return_X_y=True)
+    >>> est = ModifiedCatBoostClassifier(verbose=0)
+    >>> est.fit(X, y)
+    ModifiedCatBoostClassifier(...)
+    >>> y_pred = est.predict(X)
+    """
 
     @property
     def classes_(self) -> np.ndarray:
@@ -652,7 +779,9 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         y = self._encoder.fit_transform(y)
         cat_features = get_categorical_cols(X, labels=True)
         fit_params["cat_features"] = cat_features
@@ -682,7 +811,18 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
 
 
 class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
-    """Modified CatBoostRegressor."""
+    """Modified CatBoostRegressor.
+
+    Examples
+    --------
+    >>> from pretools.estimators import ModifiedCatBoostRegressor
+    >>> from sklearn.datasets import load_boston
+    >>> X, y = load_boston(return_X_y=True)
+    >>> est = ModifiedCatBoostRegressor(verbose=0)
+    >>> est.fit(X, y)
+    ModifiedCatBoostRegressor(...)
+    >>> y_pred = est.fit(X, y)
+    """
 
     @property
     def feature_importances_(self) -> np.ndarray:
@@ -769,7 +909,9 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         cat_features = get_categorical_cols(X, labels=True)
         fit_params["cat_features"] = cat_features
 
@@ -779,7 +921,16 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
 
 class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
-    """Modified ColumnTransformer."""
+    """Modified ColumnTransformer.
+
+    Examples
+    --------
+    >>> from pretools.estimators import ModifiedColumnTransformer
+    >>> from sklearn.datasets import load_iris
+    >>> X, y = load_iris(return_X_y=True)
+    >>> est = ModifiedColumnTransformer([("features", "passthrough", [0])])
+    >>> Xt = est.fit_transform(X)
+    """
 
     def __init__(self, transformers: List[Tuple]) -> None:
         self.transformers = transformers
@@ -802,7 +953,9 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         self.transformers_ = []
 
@@ -832,7 +985,9 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         Xs = []
 
         for _, t, cols in self.transformers_:
@@ -867,7 +1022,9 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         Xs = []
 
         self.transformers_ = []
@@ -897,7 +1054,17 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
 
 
 class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
-    """Meta-transformer for selecting features based on importance weights."""
+    """Meta-transformer for selecting features based on importance weights.
+
+    Examples
+    --------
+    >>> from pretools.estimators import ModifiedSelectFromModel
+    >>> from sklearn.datasets import load_iris
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> X, y = load_iris(return_X_y=True)
+    >>> est = ModifiedSelectFromModel(LogisticRegression())
+    >>> Xt = est.fit_transform(X, y)
+    """
 
     def __init__(
         self,
@@ -972,7 +1139,9 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         threshold = _calculate_threshold(
             self.estimator_, self.feature_importances_, self.threshold
@@ -994,7 +1163,16 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
 
 
 class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
-    """Standardize features."""
+    """Standardize features.
+
+    Examples
+    --------
+    >>> from pretools.estimators import ModifiedStandardScaler
+    >>> from sklearn.datasets import load_iris
+    >>> X, _ = load_iris(return_X_y=True)
+    >>> est = ModifiedStandardScaler()
+    >>> Xt = est.fit_transform(X)
+    """
 
     def fit(
         self, X: pd.DataFrame, y: Optional[pd.Series] = None
@@ -1014,7 +1192,7 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         self.mean_ = X.mean()
         self.std_ = X.std()
@@ -1036,7 +1214,7 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
         return (X - self.mean_) / self.scale_
 
@@ -1185,7 +1363,16 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
 
 
 class NAValuesThreshold(BaseEstimator, TransformerMixin):
-    """Feature selector that removes features with many missing values."""
+    """Feature selector that removes features with many missing values.
+
+    Examples
+    --------
+    >>> from pretools.estimators import NAValuesThreshold
+    >>> from sklearn.datasets import load_iris
+    >>> X, _ = load_iris(return_X_y=True)
+    >>> est = NAValuesThreshold()
+    >>> Xt = est.fit_transform(X)
+    """
 
     def __init__(self, threshold: float = 0.6) -> None:
         self.threshold = threshold
@@ -1208,7 +1395,9 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         self.n_samples_, _ = X.shape
         self.count_ = X.count()
@@ -1228,7 +1417,9 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         logger = logging.getLogger(__name__)
 
@@ -1246,7 +1437,16 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
 
 
 class NUniqueThreshold(BaseEstimator, TransformerMixin):
-    """Feature selector that removes low and high cardinal features."""
+    """Feature selector that removes low and high cardinal features.
+
+    Examples
+    --------
+    >>> from pretools.estimators import NUniqueThreshold
+    >>> from sklearn.datasets import load_iris
+    >>> X, _ = load_iris(return_X_y=True)
+    >>> est = NUniqueThreshold()
+    >>> Xt = est.fit_transform(X)
+    """
 
     def __init__(
         self,
@@ -1274,7 +1474,9 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         self.n_samples_, _ = X.shape
         self.nunique_ = X.nunique()
@@ -1294,7 +1496,9 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         if self.max_freq is None:
             max_freq = np.inf
@@ -1324,7 +1528,16 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
 
 
 class Profiler(BaseEstimator, TransformerMixin):
-    """Profiler."""
+    """Profiler.
+
+    Examples
+    --------
+    >>> from pretools.estimators import Profiler
+    >>> from sklearn.datasets import load_iris
+    >>> X, y = load_iris(return_X_y=True)
+    >>> est = Profiler()
+    >>> Xt = est.fit_transform(X, y)
+    """
 
     def __init__(
         self,
@@ -1354,11 +1567,14 @@ class Profiler(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        data = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+        data = X.copy()
 
         if y is not None:
             kwargs = {self.label_col: y}
-            data = X.assign(**kwargs)
+            data = data.assign(**kwargs)
 
         logger = logging.getLogger(__name__)
         summary = data.describe(include="all")
@@ -1386,11 +1602,22 @@ class Profiler(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        return pd.DataFrame(X)
+        return check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
 
 class RowStatistics(BaseEstimator, TransformerMixin):
-    """Row statistics."""
+    """Row statistics.
+
+    Examples
+    --------
+    >>> from pretools.estimators import RowStatistics
+    >>> from sklearn.datasets import load_iris
+    >>> X, _ = load_iris(return_X_y=True)
+    >>> est = RowStatistics()
+    >>> Xt = est.fit_transform(X)
+    """
 
     def __init__(self, dtype: Union[str, Type] = "float64") -> None:
         self.dtype = dtype
@@ -1428,7 +1655,9 @@ class RowStatistics(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
         Xt = pd.DataFrame()
 
         is_null = X.isnull()
@@ -1439,9 +1668,29 @@ class RowStatistics(BaseEstimator, TransformerMixin):
 
 
 class SortSamples(BaseEstimator, TransformerMixin):
-    """Transformer that sorts samples."""
+    """Transformer that sorts samples.
 
-    def __init__(self, by: Optional[Union[List[str], str]] = None) -> None:
+    Examples
+    --------
+    >>> import datetime
+    >>> from pretools.estimators import SortSamples
+    >>> X = [
+    ...     [
+    ...         datetime.datetime(1999, 1, 1),
+    ...         datetime.datetime(1999, 3, 1),
+    ...         datetime.datetime(1999, 2, 1),
+    ...     ]
+    ... ]
+    >>> est = SortSamples()
+    >>> Xt = est.fit_transform(X)
+    """
+
+    def __init__(
+        self,
+        copy: bool = True,
+        by: Optional[Union[List[str], str]] = None,
+    ) -> None:
+        self.copy = copy
         self.by = by
 
     def fit(
@@ -1477,7 +1726,9 @@ class SortSamples(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        return pd.DataFrame(X)
+        return check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
     def fit_transform(
         self, X: pd.DataFrame, y: Optional[pd.Series] = None
@@ -1497,7 +1748,9 @@ class SortSamples(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
 
         if self.by is None:
             by = get_time_cols(X, labels=True)
@@ -1506,15 +1759,31 @@ class SortSamples(BaseEstimator, TransformerMixin):
             by = self.by
 
         if by:
-            X = X.sort_values(by)
+            if self.copy:
+                X = X.copy()
+
+            X.sort_values(by, inplace=True)
 
         return X
 
 
 class TextStatistics(BaseEstimator, TransformerMixin):
-    """Text statistics."""
+    """Text statistics.
 
-    def __init__(self, dtype: Union[str, Type] = "float64") -> None:
+    Examples
+    --------
+    >>> from pretools.estimators import TextStatistics
+    >>> X = [['Cat'], ['Cow'], ['Mouse'], ['Lion']]
+    >>> est = TextStatistics()
+    >>> Xt = est.fit_transform(X)
+    """
+
+    def __init__(
+        self,
+        copy: bool = True,
+        dtype: Union[str, Type] = "float64",
+    ) -> None:
+        self.copy = copy
         self.dtype = dtype
 
     def fit(
@@ -1550,10 +1819,16 @@ class TextStatistics(BaseEstimator, TransformerMixin):
         Xt
             Transformed data.
         """
-        X = pd.DataFrame(X)
-        Xt = pd.DataFrame()
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+
+        if self.copy:
+            X = X.copy()
 
         for col in X:
-            Xt["{}_len".format(col)] = X[col].str.len()
+            X[col] = X[col].str.len()
 
-        return Xt
+        X.rename(columns="{}_len".format, inplace=True)
+
+        return X

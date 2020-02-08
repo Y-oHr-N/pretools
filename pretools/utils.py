@@ -2,8 +2,38 @@
 
 import logging
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
+
+from sklearn.utils import check_array
+
+
+def check_X(X: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
+    """Check `X`.
+
+    Parameters
+    ----------
+    X
+        Data.
+
+    estimator
+        Object to use to fit the data.
+
+    **kwargs
+        Other keywords passed to `sklearn.utils.check_array`.
+
+    Returns
+    -------
+    X
+        Converted and validated data.
+    """
+    if not isinstance(X, pd.DataFrame):
+        X = check_array(X, **kwargs)
+        X = pd.DataFrame(X)
+
+    return X
 
 
 def get_categorical_cols(X: pd.DataFrame, labels: bool = False) -> pd.Series:
