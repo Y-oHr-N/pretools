@@ -673,9 +673,12 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
 
     Examples
     --------
+    >>> import pandas as pd
     >>> from pretools.estimators import ModifiedCatBoostClassifier
-    >>> from sklearn.datasets import load_iris
-    >>> X, y = load_iris(return_X_y=True)
+    >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
+    >>> X = pd.DataFrame(X)
+    >>> X = X.astype("category")
+    >>> y = [0, 1, 1, 0]
     >>> est = ModifiedCatBoostClassifier(verbose=0)
     >>> est.fit(X, y)
     ModifiedCatBoostClassifier(...)
@@ -777,8 +780,10 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
             X, dtype=None, estimator=self, force_all_finite="allow-nan"
         )
         y = self._encoder.fit_transform(y)
-        cat_features = get_categorical_cols(X, labels=True)
-        fit_params["cat_features"] = cat_features
+
+        if "cat_features" not in fit_params:
+            cat_features = get_categorical_cols(X, labels=True)
+            fit_params["cat_features"] = cat_features
 
         self._model.fit(X, y, **fit_params)
 
@@ -809,9 +814,12 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
     Examples
     --------
+    >>> import pandas as pd
     >>> from pretools.estimators import ModifiedCatBoostRegressor
-    >>> from sklearn.datasets import load_boston
-    >>> X, y = load_boston(return_X_y=True)
+    >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
+    >>> X = pd.DataFrame(X)
+    >>> X = X.astype("category")
+    >>> y = [0.0, 1.0, 2.0, 0.0]
     >>> est = ModifiedCatBoostRegressor(verbose=0)
     >>> est.fit(X, y)
     ModifiedCatBoostRegressor(...)
@@ -906,8 +914,10 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         X = check_X(
             X, dtype=None, estimator=self, force_all_finite="allow-nan"
         )
-        cat_features = get_categorical_cols(X, labels=True)
-        fit_params["cat_features"] = cat_features
+
+        if "cat_features" not in fit_params:
+            cat_features = get_categorical_cols(X, labels=True)
+            fit_params["cat_features"] = cat_features
 
         self._model.fit(X, y, **fit_params)
 
