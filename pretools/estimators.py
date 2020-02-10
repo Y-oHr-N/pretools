@@ -24,6 +24,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils import check_random_state
 from sklearn.utils.multiclass import type_of_target
 
 try:  # scikit-learn<=0.21
@@ -39,6 +40,8 @@ from .utils import get_numerical_cols
 from .utils import get_time_cols
 from .utils import get_unknown_cols
 from .utils import sigmoid
+
+MAX_INT = np.iinfo(np.int32).max
 
 
 class Astype(BaseEstimator, TransformerMixin):
@@ -1606,6 +1609,203 @@ class Profiler(BaseEstimator, TransformerMixin):
         return check_X(
             X, dtype=None, estimator=self, force_all_finite="allow-nan"
         )
+
+
+class RandomSeedAveragingClassifier(BaseEstimator, ClassifierMixin):
+    """Random seed averaging classifier.
+
+    Examples
+    --------
+    >>> from pretools.estimators import RandomSeedAveragingClassifier
+    >>> from sklearn.datasets import load_iris
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> est = RandomForestClassifier(n_estimators=10)
+    >>> est = RandomSeedAveragingClassifier(est)
+    >>> X, y = load_iris(return_X_y=True)
+    >>> est.fit(X, y)
+    RandomSeedAveragingClassifier(...)
+    >>> y_pred = est.predict(X)
+    """
+
+    @property
+    def classes_(self) -> np.ndarray:
+        """Class labels."""
+        return self.estimators_[0].classes_
+
+    @property
+    def feature_importances_(self) -> np.ndarray:
+        """Feature importances."""
+        results = [e.feature_importances_ for e in self.estimators_]
+
+        return np.average(results, axis=0)
+
+    def __init__(
+        self,
+        estimator: BaseEstimator,
+        n_estimators: int = 10,
+        random_state: Optional[Union[int, np.random.RandomState]] = None
+    ) -> None:
+        self.estimator = estimator
+        self.n_estimators = n_estimators
+        self.random_state = random_state
+
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        **fit_params: Any
+    ) -> "RandomSeedAveragingClassifier":
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        random_state = check_random_state(self.random_state)
+
+        self.estimators_ = []
+
+        for _ in range(self.n_estimators):
+            e = clone(self.estimator)
+            seed = random_state.randint(0, MAX_INT)
+
+            e.set_params(random_state=seed)
+            e.fit(X, y, **fit_params)
+
+            self.estimators_.append(e)
+
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict using the fitted model.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        y_pred
+            Predicted values.
+        """
+        probas = self.predict_proba(X)
+        class_index = np.argmax(probas, axis=1)
+
+        return self.classes_[class_index]
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """Predict class probabilities for data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        p
+            Class probabilities of data.
+        """
+        results = [e.predict_proba(X) for e in self.estimators_]
+
+        return np.average(results, axis=0)
+
+
+class RandomSeedAveragingRegressor(BaseEstimator, RegressorMixin):
+    """Random seed averaging regressor.
+
+    Examples
+    --------
+    >>> from pretools.estimators import RandomSeedAveragingRegressor
+    >>> from sklearn.datasets import load_boston
+    >>> from sklearn.ensemble import RandomForestRegressor
+    >>> est = RandomForestRegressor(n_estimators=10)
+    >>> est = RandomSeedAveragingRegressor(est)
+    >>> X, y = load_boston(return_X_y=True)
+    >>> est.fit(X, y)
+    RandomSeedAveragingRegressor(...)
+    >>> y_pred = est.predict(X)
+    """
+
+    @property
+    def feature_importances_(self) -> np.ndarray:
+        """Feature importances."""
+        results = [e.feature_importances_ for e in self.estimators_]
+
+        return np.average(results, axis=0)
+
+    def __init__(
+        self,
+        estimator: BaseEstimator,
+        n_estimators: int = 10,
+        random_state: Optional[Union[int, np.random.RandomState]] = None
+    ) -> None:
+        self.estimator = estimator
+        self.n_estimators = n_estimators
+        self.random_state = random_state
+
+    def fit(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        **fit_params: Any
+    ) -> "RandomSeedAveragingRegressor":
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        random_state = check_random_state(self.random_state)
+
+        self.estimators_ = []
+
+        for _ in range(self.n_estimators):
+            e = clone(self.estimator)
+            seed = random_state.randint(0, MAX_INT)
+
+            e.set_params(random_state=seed)
+            e.fit(X, y, **fit_params)
+
+            self.estimators_.append(e)
+
+        return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict using the fitted model.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        y_pred
+            Predicted values.
+        """
+        results = [e.predict(X) for e in self.estimators_]
+
+        return np.average(results, axis=0)
 
 
 class RowStatistics(BaseEstimator, TransformerMixin):
