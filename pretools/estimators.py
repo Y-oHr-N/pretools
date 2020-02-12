@@ -673,9 +673,10 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
 
     Examples
     --------
+    >>> import numpy as np
     >>> import pandas as pd
     >>> from pretools.estimators import ModifiedCatBoostClassifier
-    >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
+    >>> X = [["Cat"], ["Cow"], ["Mouse"], [np.nan]]
     >>> X = pd.DataFrame(X)
     >>> X = X.astype("category")
     >>> y = [0, 1, 1, 0]
@@ -779,11 +780,20 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         X = check_X(
             X, dtype=None, estimator=self, force_all_finite="allow-nan"
         )
+        X = X.copy()
         y = self._encoder.fit_transform(y)
 
         if "cat_features" not in fit_params:
             cat_features = get_categorical_cols(X, labels=True)
             fit_params["cat_features"] = cat_features
+
+        self.cat_features_ = fit_params["cat_features"]
+
+        for cat_feature in self.cat_features_:
+            value = "None"
+
+            X[cat_feature].cat.add_categories(value, inplace=True)
+            X[cat_feature].fillna(value=value, inplace=True)
 
         self._model.fit(X, y, **fit_params)
 
@@ -802,6 +812,17 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         y_pred
             Predicted values.
         """
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+        X = X.copy()
+
+        for cat_feature in self.cat_features_:
+            value = "None"
+
+            X[cat_feature].cat.add_categories(value, inplace=True)
+            X[cat_feature].fillna(value=value, inplace=True)
+
         y_pred = self._model.predict(X)
         y_pred = np.ravel(y_pred)
         y_pred = y_pred.astype("int64")
@@ -814,9 +835,10 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
 
     Examples
     --------
+    >>> import numpy as np
     >>> import pandas as pd
     >>> from pretools.estimators import ModifiedCatBoostRegressor
-    >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
+    >>> X = [["Cat"], ["Cow"], ["Mouse"], [np.nan]]
     >>> X = pd.DataFrame(X)
     >>> X = X.astype("category")
     >>> y = [0.0, 1.0, 2.0, 0.0]
@@ -830,22 +852,6 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
     def feature_importances_(self) -> np.ndarray:
         """Feature importances."""
         return self._model.get_feature_importance()
-
-    @property
-    def predict(self) -> Callable[[np.ndarray], np.ndarray]:
-        """Predict using the fitted model.
-
-        Parameters
-        ----------
-        X
-            Data.
-
-        Returns
-        -------
-        y_pred
-            Predicted values.
-        """
-        return self._model.predict
 
     def __init__(self, **params: Any) -> None:
         from catboost import CatBoostRegressor
@@ -914,14 +920,49 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         X = check_X(
             X, dtype=None, estimator=self, force_all_finite="allow-nan"
         )
+        X = X.copy()
 
         if "cat_features" not in fit_params:
             cat_features = get_categorical_cols(X, labels=True)
             fit_params["cat_features"] = cat_features
 
+        self.cat_features_ = fit_params["cat_features"]
+
+        for cat_feature in self.cat_features_:
+            value = "None"
+
+            X[cat_feature].cat.add_categories(value, inplace=True)
+            X[cat_feature].fillna(value=value, inplace=True)
+
         self._model.fit(X, y, **fit_params)
 
         return self
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predict using the fitted model.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        y_pred
+            Predicted values.
+        """
+        X = check_X(
+            X, dtype=None, estimator=self, force_all_finite="allow-nan"
+        )
+        X = X.copy()
+
+        for cat_feature in self.cat_features_:
+            value = "None"
+
+            X[cat_feature].cat.add_categories(value, inplace=True)
+            X[cat_feature].fillna(value=value, inplace=True)
+
+        return self._model.predict(X)
 
 
 class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
