@@ -676,7 +676,7 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
     >>> import numpy as np
     >>> import pandas as pd
     >>> from pretools.estimators import ModifiedCatBoostClassifier
-    >>> X = [["Cat"], ["Cow"], ["Mouse"], [np.nan]]
+    >>> X = [[1.0], [2.0], [2.0], [np.nan]]
     >>> X = pd.DataFrame(X)
     >>> X = X.astype("category")
     >>> y = [0, 1, 1, 0]
@@ -792,8 +792,12 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         for cat_feature in self.cat_features_:
             value = "None"
 
+            X[cat_feature] = X[cat_feature].astype("category")
+
             X[cat_feature].cat.add_categories(value, inplace=True)
             X[cat_feature].fillna(value=value, inplace=True)
+
+            X[cat_feature] = X[cat_feature].apply(hash)
 
         self._model.fit(X, y, **fit_params)
 
@@ -820,8 +824,12 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
         for cat_feature in self.cat_features_:
             value = "None"
 
+            X[cat_feature] = X[cat_feature].astype("category")
+
             X[cat_feature].cat.add_categories(value, inplace=True)
             X[cat_feature].fillna(value=value, inplace=True)
+
+            X[cat_feature] = X[cat_feature].apply(hash)
 
         y_pred = self._model.predict(X)
         y_pred = np.ravel(y_pred)
@@ -838,7 +846,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
     >>> import numpy as np
     >>> import pandas as pd
     >>> from pretools.estimators import ModifiedCatBoostRegressor
-    >>> X = [["Cat"], ["Cow"], ["Mouse"], [np.nan]]
+    >>> X = [[1.0], [2.0], [2.0], [np.nan]]
     >>> X = pd.DataFrame(X)
     >>> X = X.astype("category")
     >>> y = [0.0, 1.0, 2.0, 0.0]
@@ -931,8 +939,12 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         for cat_feature in self.cat_features_:
             value = "None"
 
+            X[cat_feature] = X[cat_feature].astype("category")
+
             X[cat_feature].cat.add_categories(value, inplace=True)
             X[cat_feature].fillna(value=value, inplace=True)
+
+            X[cat_feature] = X[cat_feature].apply(hash)
 
         self._model.fit(X, y, **fit_params)
 
@@ -959,8 +971,12 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
         for cat_feature in self.cat_features_:
             value = "None"
 
+            X[cat_feature] = X[cat_feature].astype("category")
+
             X[cat_feature].cat.add_categories(value, inplace=True)
             X[cat_feature].fillna(value=value, inplace=True)
+
+            X[cat_feature] = X[cat_feature].apply(hash)
 
         return self._model.predict(X)
 
