@@ -26,6 +26,7 @@ from sklearn.model_selection import check_cv
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import check_random_state
 from sklearn.utils.multiclass import type_of_target
+from tqdm import trange
 
 try:  # scikit-learn<=0.21
     from sklearn.feature_selection.from_model import _calculate_threshold
@@ -1684,7 +1685,7 @@ class RandomSeedAveragingClassifier(BaseEstimator, ClassifierMixin):
 
         self.estimators_ = []
 
-        for _ in range(self.n_estimators):
+        for _ in trange(self.n_estimators):
             e = clone(self.estimator)
             seed = random_state.randint(0, MAX_INT)
             to_set = {}
@@ -1795,7 +1796,7 @@ class RandomSeedAveragingRegressor(BaseEstimator, RegressorMixin):
 
         self.estimators_ = []
 
-        for _ in range(self.n_estimators):
+        for _ in trange(self.n_estimators):
             e = clone(self.estimator)
             seed = random_state.randint(0, MAX_INT)
             to_set = {}
