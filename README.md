@@ -24,7 +24,7 @@ model = make_pipeline(
     ClippedFeatures(),
     ModifiedStandardScaler(),
     ModifiedSelectFromModel(model, random_state=0, threshold=1e-06),
-    CombinedFeatures(),
+    CombinedFeatures(include_data=True),
     ModifiedSelectFromModel(model, random_state=0, threshold=1e-06),
     model,
 )
