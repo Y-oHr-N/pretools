@@ -1687,8 +1687,14 @@ class RandomSeedAveragingClassifier(BaseEstimator, ClassifierMixin):
         for _ in range(self.n_estimators):
             e = clone(self.estimator)
             seed = random_state.randint(0, MAX_INT)
+            to_set = {}
+            params = e.get_params(deep=True)
 
-            e.set_params(random_state=seed)
+            for key in params:
+                if key.endswith("random_state"):
+                    to_set[key] = seed
+
+            e.set_params(**to_set)
             e.fit(X, y, **fit_params)
 
             self.estimators_.append(e)
@@ -1792,8 +1798,14 @@ class RandomSeedAveragingRegressor(BaseEstimator, RegressorMixin):
         for _ in range(self.n_estimators):
             e = clone(self.estimator)
             seed = random_state.randint(0, MAX_INT)
+            to_set = {}
+            params = e.get_params(deep=True)
 
-            e.set_params(random_state=seed)
+            for key in params:
+                if key.endswith("random_state"):
+                    to_set[key] = seed
+
+            e.set_params(**to_set)
             e.fit(X, y, **fit_params)
 
             self.estimators_.append(e)
