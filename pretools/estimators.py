@@ -20,6 +20,7 @@ from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
 from sklearn.base import clone
 from sklearn.base import TransformerMixin
+from sklearn.compose._column_transformer import _get_transformer_list
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import BaseCrossValidator
 from sklearn.model_selection import check_cv
@@ -43,6 +44,22 @@ from .utils import get_unknown_cols
 from .utils import sigmoid
 
 MAX_INT = np.iinfo(np.int32).max
+
+
+def make_modified_column_transformer(
+    *transformers: Tuple,
+) -> "ModifiedColumnTransformer":
+    """Make ModifedColumnTransformer.
+
+    Examples
+    --------
+    >>> from pretools.estimators import make_modified_column_transformer
+    >>> transformers = [("passthrough", [0])]
+    >>> est = make_modified_column_transformer(*transformers)
+    """
+    transformer_list = _get_transformer_list(transformers)
+
+    return ModifiedColumnTransformer(transformer_list)
 
 
 class Astype(BaseEstimator, TransformerMixin):
