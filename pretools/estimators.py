@@ -1671,17 +1671,14 @@ class RandomSeedAveragingClassifier(BaseEstimator, ClassifierMixin):
         self,
         estimator: BaseEstimator,
         n_estimators: int = 10,
-        random_state: Optional[Union[int, np.random.RandomState]] = None
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
     ) -> None:
         self.estimator = estimator
         self.n_estimators = n_estimators
         self.random_state = random_state
 
     def fit(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        **fit_params: Any
+        self, X: np.ndarray, y: np.ndarray, **fit_params: Any
     ) -> "RandomSeedAveragingClassifier":
         """Fit the model according to the given training data.
 
@@ -1782,17 +1779,14 @@ class RandomSeedAveragingRegressor(BaseEstimator, RegressorMixin):
         self,
         estimator: BaseEstimator,
         n_estimators: int = 10,
-        random_state: Optional[Union[int, np.random.RandomState]] = None
+        random_state: Optional[Union[int, np.random.RandomState]] = None,
     ) -> None:
         self.estimator = estimator
         self.n_estimators = n_estimators
         self.random_state = random_state
 
     def fit(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        **fit_params: Any
+        self, X: np.ndarray, y: np.ndarray, **fit_params: Any
     ) -> "RandomSeedAveragingRegressor":
         """Fit the model according to the given training data.
 
