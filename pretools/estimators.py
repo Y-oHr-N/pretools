@@ -641,12 +641,13 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         """
         X = check_X(X, estimator=self, force_all_finite="allow-nan")
 
-        X, _, = train_test_split(
-            X,
-            random_state=self.random_state,
-            train_size=self.subsample,
-            shuffle=self.shuffle,
-        )
+        if self.subsample < 1.0:
+            X, _, = train_test_split(
+                X,
+                random_state=self.random_state,
+                train_size=self.subsample,
+                shuffle=self.shuffle,
+            )
 
         self.corr_ = X.corr(method=self.method)
 
@@ -1122,13 +1123,14 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
         self
             Return self.
         """
-        X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            random_state=self.random_state,
-            train_size=self.subsample,
-            shuffle=self.shuffle,
-        )
+        if self.subsample < 1.0:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X,
+                y,
+                random_state=self.random_state,
+                train_size=self.subsample,
+                shuffle=self.shuffle,
+            )
 
         self.estimator_ = clone(self.estimator)
 
