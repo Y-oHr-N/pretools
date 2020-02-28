@@ -135,11 +135,9 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
     >>> import datetime
     >>> from pretools.estimators import CalendarFeatures
     >>> X = [
-    ...     [
-    ...         datetime.datetime(1999, 1, 1),
-    ...         datetime.datetime(1999, 3, 1),
-    ...         datetime.datetime(1999, 2, 1),
-    ...     ]
+    ...     [datetime.datetime(2000, 1, 1, 0, 0, 0)],
+    ...     [np.nan],
+    ...     [datetime.datetime(2010, 10, 10, 10, 0, 0)]
     ... ]
     >>> est = CalendarFeatures()
     >>> Xt = est.fit_transform(X)
@@ -308,8 +306,7 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
     Examples
     --------
     >>> from pretools.estimators import ClippedFeatures
-    >>> from sklearn.datasets import load_iris
-    >>> X, _ = load_iris(return_X_y=True)
+    >>> X = [[10, np.nan, 4], [0, 2, 1]]
     >>> est = ClippedFeatures()
     >>> Xt = est.fit_transform(X)
     """
@@ -375,8 +372,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
     Examples
     --------
     >>> from pretools.estimators import CombinedFeatures
-    >>> from sklearn.datasets import load_iris
-    >>> X, _ = load_iris(return_X_y=True)
+    >>> X = [[1, 1], [1, 2], [1, np.nan], [1, -10]]
     >>> est = CombinedFeatures()
     >>> Xt = est.fit_transform(X)
     """
@@ -601,8 +597,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
     Examples
     --------
     >>> from pretools.estimators import DropCollinearFeatures
-    >>> from sklearn.datasets import load_iris
-    >>> X, _ = load_iris(return_X_y=True)
+    >>> X = [[1, 1, 1], [2, 2, 200], [3, 3, 3000], [1, np.nan, 1]]
     >>> est = DropCollinearFeatures()
     >>> Xt = est.fit_transform(X)
     """
