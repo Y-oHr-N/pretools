@@ -41,5 +41,5 @@ pip install pretools
 ## Testing
 
 ```
-python setup.py test
+tox
 ```
