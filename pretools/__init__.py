@@ -11,8 +11,7 @@ try:
 except DistributionNotFound:
     pass
 
-from . import estimators  # noqa
-from . import metrics  # noqa
+from . import sklearn  # noqa
 from . import utils  # noqa
 from . import types  # noqa
 

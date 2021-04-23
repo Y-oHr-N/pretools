@@ -36,12 +36,12 @@ except ImportError:
     from sklearn.feature_selection._from_model import _calculate_threshold
     from sklearn.feature_selection._from_model import _get_feature_importances
 
-from .utils import check_X
-from .utils import get_categorical_cols
-from .utils import get_numerical_cols
-from .utils import get_time_cols
-from .utils import get_unknown_cols
-from .utils import sigmoid
+from ..utils import check_X
+from ..utils import get_categorical_cols
+from ..utils import get_numerical_cols
+from ..utils import get_time_cols
+from ..utils import get_unknown_cols
+from ..utils import sigmoid
 
 MAX_INT = np.iinfo(np.int32).max
 
@@ -53,7 +53,7 @@ def make_modified_column_transformer(
 
     Examples
     --------
-    >>> from pretools.estimators import make_modified_column_transformer
+    >>> from pretools.sklearn.estimators import make_modified_column_transformer  # noqa
     >>> transformers = [("passthrough", [0])]
     >>> est = make_modified_column_transformer(*transformers)
     """
@@ -67,7 +67,7 @@ class Astype(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import Astype
+    >>> from pretools.sklearn.estimators import Astype
     >>> from sklearn.datasets import load_iris
     >>> X, _ = load_iris(return_X_y=True)
     >>> est = Astype()
@@ -133,7 +133,7 @@ class CalendarFeatures(BaseEstimator, TransformerMixin):
     Examples
     --------
     >>> import datetime
-    >>> from pretools.estimators import CalendarFeatures
+    >>> from pretools.sklearn.estimators import CalendarFeatures
     >>> X = [
     ...     [datetime.datetime(2000, 1, 1, 0, 0, 0)],
     ...     [np.nan],
@@ -305,7 +305,7 @@ class ClippedFeatures(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import ClippedFeatures
+    >>> from pretools.sklearn.estimators import ClippedFeatures
     >>> X = [[10, np.nan, 4], [0, 2, 1]]
     >>> est = ClippedFeatures()
     >>> Xt = est.fit_transform(X)
@@ -371,7 +371,7 @@ class CombinedFeatures(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import CombinedFeatures
+    >>> from pretools.sklearn.estimators import CombinedFeatures
     >>> X = [[1, 1], [1, 2], [1, np.nan], [1, -10]]
     >>> est = CombinedFeatures()
     >>> Xt = est.fit_transform(X)
@@ -538,7 +538,7 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
     Examples
     --------
     >>> import numpy as np
-    >>> from pretools.estimators import DiffFeatures
+    >>> from pretools.sklearn.estimators import DiffFeatures
     >>> est = DiffFeatures()
     >>> X = [[1], [np.nan], [1], [10], [1]]
     >>> Xt = est.fit_transform(X)
@@ -596,7 +596,7 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import DropCollinearFeatures
+    >>> from pretools.sklearn.estimators import DropCollinearFeatures
     >>> X = [[1, 1, 1], [2, 2, 200], [3, 3, 3000], [1, np.nan, 1]]
     >>> est = DropCollinearFeatures()
     >>> Xt = est.fit_transform(X)
@@ -688,7 +688,7 @@ class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
     Examples
     --------
     >>> import pandas as pd
-    >>> from pretools.estimators import ModifiedCatBoostClassifier
+    >>> from pretools.sklearn.estimators import ModifiedCatBoostClassifier
     >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
     >>> X = pd.DataFrame(X)
     >>> X = X.astype("category")
@@ -829,7 +829,7 @@ class ModifiedCatBoostRegressor(BaseEstimator, RegressorMixin):
     Examples
     --------
     >>> import pandas as pd
-    >>> from pretools.estimators import ModifiedCatBoostRegressor
+    >>> from pretools.sklearn.estimators import ModifiedCatBoostRegressor
     >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
     >>> X = pd.DataFrame(X)
     >>> X = X.astype("category")
@@ -943,7 +943,7 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import ModifiedColumnTransformer
+    >>> from pretools.sklearn.estimators import ModifiedColumnTransformer
     >>> from sklearn.datasets import load_iris
     >>> X, y = load_iris(return_X_y=True)
     >>> est = ModifiedColumnTransformer([("features", "passthrough", [0])])
@@ -1076,7 +1076,7 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import ModifiedSelectFromModel
+    >>> from pretools.sklearn.estimators import ModifiedSelectFromModel
     >>> from sklearn.datasets import load_iris
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = load_iris(return_X_y=True)
@@ -1186,7 +1186,7 @@ class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import ModifiedStandardScaler
+    >>> from pretools.sklearn.estimators import ModifiedStandardScaler
     >>> from sklearn.datasets import load_iris
     >>> X, _ = load_iris(return_X_y=True)
     >>> est = ModifiedStandardScaler()
@@ -1243,7 +1243,7 @@ class ModifiedTargetEncoder(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import ModifiedTargetEncoder
+    >>> from pretools.sklearn.estimators import ModifiedTargetEncoder
     >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
     >>> y = [0, 1, 1, 0]
     >>> est = ModifiedTargetEncoder(cv=2)
@@ -1396,7 +1396,7 @@ class NAValuesThreshold(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import NAValuesThreshold
+    >>> from pretools.sklearn.estimators import NAValuesThreshold
     >>> from sklearn.datasets import load_iris
     >>> X, _ = load_iris(return_X_y=True)
     >>> est = NAValuesThreshold()
@@ -1470,7 +1470,7 @@ class NUniqueThreshold(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import NUniqueThreshold
+    >>> from pretools.sklearn.estimators import NUniqueThreshold
     >>> from sklearn.datasets import load_iris
     >>> X, _ = load_iris(return_X_y=True)
     >>> est = NUniqueThreshold()
@@ -1561,7 +1561,7 @@ class Profiler(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import Profiler
+    >>> from pretools.sklearn.estimators import Profiler
     >>> from sklearn.datasets import load_iris
     >>> X, y = load_iris(return_X_y=True)
     >>> est = Profiler()
@@ -1641,7 +1641,7 @@ class RandomSeedAveragingClassifier(BaseEstimator, ClassifierMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import RandomSeedAveragingClassifier
+    >>> from pretools.sklearn.estimators import RandomSeedAveragingClassifier
     >>> from sklearn.datasets import load_iris
     >>> from sklearn.ensemble import RandomForestClassifier
     >>> est = RandomForestClassifier(n_estimators=10)
@@ -1754,7 +1754,7 @@ class RandomSeedAveragingRegressor(BaseEstimator, RegressorMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import RandomSeedAveragingRegressor
+    >>> from pretools.sklearn.estimators import RandomSeedAveragingRegressor
     >>> from sklearn.datasets import load_boston
     >>> from sklearn.ensemble import RandomForestRegressor
     >>> est = RandomForestRegressor(n_estimators=10)
@@ -1844,7 +1844,7 @@ class RowStatistics(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import RowStatistics
+    >>> from pretools.sklearn.estimators import RowStatistics
     >>> from sklearn.datasets import load_iris
     >>> X, _ = load_iris(return_X_y=True)
     >>> est = RowStatistics()
@@ -1905,7 +1905,7 @@ class SortSamples(BaseEstimator, TransformerMixin):
     Examples
     --------
     >>> import datetime
-    >>> from pretools.estimators import SortSamples
+    >>> from pretools.sklearn.estimators import SortSamples
     >>> X = [
     ...     [
     ...         datetime.datetime(1999, 1, 1),
@@ -2002,7 +2002,7 @@ class TextStatistics(BaseEstimator, TransformerMixin):
 
     Examples
     --------
-    >>> from pretools.estimators import TextStatistics
+    >>> from pretools.sklearn.estimators import TextStatistics
     >>> X = [["Cat"], ["Cow"], ["Mouse"], ["Lion"]]
     >>> est = TextStatistics()
     >>> Xt = est.fit_transform(X)

@@ -10,7 +10,7 @@ Preparation tools for machine learning.
 ## Examples
 
 ```python
-from pretools.estimators import *
+from pretools.sklearn.estimators import *
 from sklearn.datasets import load_boston
 from sklearn.pipeline import make_pipeline
 
