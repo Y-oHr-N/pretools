@@ -1851,8 +1851,17 @@ class RowStatistics(BaseEstimator, TransformerMixin):
     >>> Xt = est.fit_transform(X)
     """
 
-    def __init__(self, dtype: Union[str, Type] = "float64") -> None:
-        self.dtype = dtype
+    def __init__(
+        self,
+        agg_funcs: Optional[List[str]] = None,
+        columns: Optional[List[str]] = None,
+        include_data: bool = False,
+        prefix: Optional[str] = None,
+    ) -> None:
+        self.agg_funcs = agg_funcs
+        self.columns = columns
+        self.include_data = include_data
+        self.prefix = prefix
 
     def fit(
         self, X: pd.DataFrame, y: Optional[pd.Series] = None
@@ -1892,11 +1901,35 @@ class RowStatistics(BaseEstimator, TransformerMixin):
         )
         Xt = pd.DataFrame()
 
-        is_null = X.isnull()
+        if self.agg_funcs is None:
+            agg_funcs = [
+                "min",
+                "max",
+                "mean",
+                "std",
+                "kurtosis",
+                "skew",
+            ]
+        else:
+            agg_funcs = self.agg_funcs
 
-        Xt["number_of_na_values"] = is_null.sum(axis=1)
+        if self.columns is None:
+            columns = X.columns
+        else:
+            columns = self.columns
 
-        return Xt.astype(self.dtype)
+        if self.prefix is None:
+            prefix = ""
+        else:
+            prefix = self.prefix
+
+        for agg_func in agg_funcs:
+            Xt[f"{prefix}{agg_func}"] = X[columns].agg(agg_func, axis=1)
+
+        if self.include_data:
+            Xt = pd.concat([X, Xt], axis=1)
+
+        return Xt
 
 
 class SortSamples(BaseEstimator, TransformerMixin):
