@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 import sklearn
 
+from scipy.sparse import issparse
+from scipy.stats import ks_2samp
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
 from sklearn.base import RegressorMixin
@@ -33,9 +35,11 @@ from tqdm import trange
 if sklearn.__version__ >= "0.22":
     from sklearn.feature_selection._from_model import _calculate_threshold
     from sklearn.feature_selection._from_model import _get_feature_importances
+    from sklearn.utils import _safe_indexing  # noqa
 else:
     from sklearn.feature_selection.from_model import _calculate_threshold
     from sklearn.feature_selection.from_model import _get_feature_importances
+    from sklearn.utils import safe_indexing as _safe_indexing  # noqa
 
 from ..utils import check_X
 from ..utils import get_categorical_cols
@@ -681,6 +685,122 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
         )
 
         return X.loc[:, cols]
+
+
+class DropDriftFeatures(BaseEstimator, TransformerMixin):
+    """Drop drift features.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pretools.sklearn.estimators import DropDriftFeatures
+    >>> sel = DropDriftFeatures()
+    >>> X = [[1, 1, 100], [2, 2, 10], [1, 1, 1], [np.nan, 1, 1]]
+    >>> X_test = [[1, 1000, 100], [2, 300, 10], [1, 100, 1], [1, 100, 1]]
+    >>> Xt = sel.fit_transform(X, X_test=X_test)
+    >>> Xt.shape
+    (4, 2)
+    """
+
+    def __init__(
+        self,
+        alpha: float = 0.05,
+        max_samples: int = 100_000,
+        random_state: Union[int, np.random.RandomState] = None,
+    ) -> None:
+        self.alpha = alpha
+        self.max_samples = max_samples
+        self.random_state = random_state
+
+    def fit(
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None,
+        X_test: Optional[pd.DataFrame] = None,
+    ) -> "DropDriftFeatures":
+        """Fit the model according to the given training data.
+
+        Parameters
+        ----------
+        X
+            Training data.
+
+        y
+            Target.
+
+        Returns
+        -------
+        self
+            Return self.
+        """
+        if X_test is None:
+            self.pvalues_ = None
+
+            return self
+
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
+        X_test = check_X(X_test, estimator=self, force_all_finite="allow-nan")
+        random_state = check_random_state(self.random_state)
+        train_size, _ = X.shape
+        train_size = min(train_size, self.max_samples)
+        test_size, _ = X_test.shape
+        test_size = min(test_size, self.max_samples)
+
+        _, self.n_features_ = X.shape
+        self.pvalues_ = np.empty(self.n_features_)
+
+        for j, column in enumerate(X):
+            x = X[column]
+            x_test = X_test[column]
+            is_nan = pd.isnull(x)
+            is_nan_test = pd.isnull(x_test)
+            train = np.where(~is_nan)[0]
+            train = random_state.choice(train, size=train_size)
+            test = np.where(~is_nan_test)[0]
+            test = random_state.choice(test, size=test_size)
+            x = _safe_indexing(x, train)
+            x_test = _safe_indexing(x_test, test)
+
+            if issparse(x):
+                x = np.ravel(x.toarray())
+
+            if issparse(x_test):
+                x_test = np.ravel(x_test.toarray())
+
+            self.pvalues_[j] = ks_2samp(x, x_test).pvalue
+
+        return self
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
+
+        if self.pvalues_ is None:
+            return X
+
+        support = self.pvalues_ >= self.alpha
+        selected_columns = X.columns[support]
+
+        logger = logging.getLogger(__name__)
+
+        logger.info(
+            "{} dropped {} features.".format(
+                self.__class__.__name__, np.sum(support)
+            )
+        )
+
+        return X[selected_columns]
 
 
 class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
