@@ -14,6 +14,7 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
+import sklearn
 
 from sklearn.base import BaseEstimator
 from sklearn.base import ClassifierMixin
@@ -29,12 +30,12 @@ from sklearn.utils import check_random_state
 from sklearn.utils.multiclass import type_of_target
 from tqdm import trange
 
-try:  # scikit-learn<=0.21
-    from sklearn.feature_selection.from_model import _calculate_threshold
-    from sklearn.feature_selection.from_model import _get_feature_importances
-except ImportError:
+if sklearn.__version__ >= "0.22":
     from sklearn.feature_selection._from_model import _calculate_threshold
     from sklearn.feature_selection._from_model import _get_feature_importances
+else:
+    from sklearn.feature_selection.from_model import _calculate_threshold
+    from sklearn.feature_selection.from_model import _get_feature_importances
 
 from ..utils import check_X
 from ..utils import get_categorical_cols
