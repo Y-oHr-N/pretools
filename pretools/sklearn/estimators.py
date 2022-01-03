@@ -3,6 +3,7 @@
 import itertools
 import logging
 
+from abc import abstractmethod
 from typing import Any
 from typing import Dict
 from typing import Callable
@@ -65,6 +66,46 @@ def make_modified_column_transformer(
     transformer_list = _get_transformer_list(transformers)
 
     return ModifiedColumnTransformer(transformer_list)
+
+
+class SelectorMixin(TransformerMixin):
+    """Mixin class for all selectors."""
+
+    @abstractmethod
+    def get_support(self) -> np.ndarray:
+        """Get a mask of the features selected.
+
+        Returns
+        -------
+        mask
+            Boolean mask.
+        """
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        """Transform the data.
+
+        Parameters
+        ----------
+        X
+            Data.
+
+        Returns
+        -------
+        Xt
+            Transformed data.
+        """
+        logger = logging.getLogger(__name__)
+
+        X = check_X(X, estimator=self, force_all_finite="allow-nan")
+        mask = self.get_support()
+
+        logger.info(
+            "{} dropped {} features.".format(
+                self.__class__.__name__, np.sum(~mask)
+            )
+        )
+
+        return X.loc[:, mask]
 
 
 class Astype(BaseEstimator, TransformerMixin):
@@ -596,7 +637,7 @@ class DiffFeatures(BaseEstimator, TransformerMixin):
         return Xt
 
 
-class DropCollinearFeatures(BaseEstimator, TransformerMixin):
+class DropCollinearFeatures(BaseEstimator, SelectorMixin):
     """Feature selector that removes collinear features.
 
     Examples
@@ -653,41 +694,22 @@ class DropCollinearFeatures(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Transform the data.
-
-        Parameters
-        ----------
-        X
-            Data.
+    def get_support(self) -> np.ndarray:
+        """Get a mask of the features selected.
 
         Returns
         -------
-        Xt
-            Transformed data.
+        mask
+            Boolean mask.
         """
-        X = check_X(X, estimator=self, force_all_finite="allow-nan")
-
         triu = np.triu(self.corr_, k=1)
         triu = np.abs(triu)
         triu = np.nan_to_num(triu)
 
-        logger = logging.getLogger(__name__)
-
-        cols = np.all(triu <= self.threshold, axis=0)
-        _, n_features = X.shape
-        n_dropped_features = n_features - np.sum(cols)
-
-        logger.info(
-            "{} dropped {} features.".format(
-                self.__class__.__name__, n_dropped_features
-            )
-        )
-
-        return X.loc[:, cols]
+        return np.all(triu <= self.threshold, axis=0)
 
 
-class DropDriftFeatures(BaseEstimator, TransformerMixin):
+class DropDriftFeatures(BaseEstimator, SelectorMixin):
     """Drop drift features.
 
     Examples
@@ -772,36 +794,15 @@ class DropDriftFeatures(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Transform the data.
-
-        Parameters
-        ----------
-        X
-            Data.
+    def get_support(self) -> np.ndarray:
+        """Get a mask of the features selected.
 
         Returns
         -------
-        Xt
-            Transformed data.
+        mask
+            Boolean mask.
         """
-        X = check_X(X, estimator=self, force_all_finite="allow-nan")
-
-        if self.pvalues_ is None:
-            return X
-
-        support = self.pvalues_ >= self.alpha
-        selected_columns = X.columns[support]
-
-        logger = logging.getLogger(__name__)
-
-        logger.info(
-            "{} dropped {} features.".format(
-                self.__class__.__name__, np.sum(support)
-            )
-        )
-
-        return X[selected_columns]
+        return self.pvalues_ >= self.alpha
 
 
 class ModifiedCatBoostClassifier(BaseEstimator, ClassifierMixin):
@@ -1193,7 +1194,7 @@ class ModifiedColumnTransformer(BaseEstimator, TransformerMixin):
         return pd.concat(Xs, axis=1)
 
 
-class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
+class ModifiedSelectFromModel(BaseEstimator, SelectorMixin):
     """Meta-transformer for selecting features based on importance weights.
 
     Examples
@@ -1267,40 +1268,19 @@ class ModifiedSelectFromModel(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
-        """Transform the data.
-
-        Parameters
-        ----------
-        X
-            Data.
+    def get_support(self) -> pd.Series:
+        """Get a mask of the features selected.
 
         Returns
         -------
-        Xt
-            Transformed data.
+        mask
+            Boolean mask.
         """
-        X = check_X(
-            X, dtype=None, estimator=self, force_all_finite="allow-nan"
-        )
-
         threshold = _calculate_threshold(
             self.estimator_, self.feature_importances_, self.threshold
         )
 
-        logger = logging.getLogger(__name__)
-
-        cols = self.feature_importances_ >= threshold
-        _, n_features = X.shape
-        n_dropped_features = n_features - np.sum(cols)
-
-        logger.info(
-            "{} dropped {} features.".format(
-                self.__class__.__name__, n_dropped_features
-            )
-        )
-
-        return X.loc[:, cols]
+        return self.feature_importances_ >= threshold
 
 
 class ModifiedStandardScaler(BaseEstimator, TransformerMixin):
