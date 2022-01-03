@@ -728,15 +728,16 @@ class DropDriftFeatures(BaseEstimator, TransformerMixin):
         y
             Target.
 
+        X_test
+            Test data.
+
         Returns
         -------
         self
             Return self.
         """
         if X_test is None:
-            self.pvalues_ = None
-
-            return self
+            raise ValueError("X_test must be given.")
 
         X = check_X(X, estimator=self, force_all_finite="allow-nan")
         X_test = check_X(X_test, estimator=self, force_all_finite="allow-nan")
